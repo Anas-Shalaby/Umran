@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Umran";
+  src: url("../../fonts/alfont_com_AAJannatLT-.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(245, 158, 11, 0.24);
+  color: #064e3b;
+}
+
+.dark ::selection {
+  background: rgba(245, 158, 11, 0.32);
+  color: #ecfdf5;
+}
