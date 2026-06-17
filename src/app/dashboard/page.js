@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("has_onboarded, display_name, phone")
+    .select("has_onboarded, display_name, phone, ultimate_purpose")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,6 +31,7 @@ export default async function DashboardPage() {
     user.user_metadata?.display_name ||
     user.user_metadata?.name ||
     "";
+  const ultimatePurpose = profile?.ultimate_purpose || "";
   const todayLabel = new Intl.DateTimeFormat("ar-EG", {
     weekday: "long",
     day: "numeric",
@@ -42,6 +43,7 @@ export default async function DashboardPage() {
     <DashboardShell
       todayLabel={todayLabel}
       userDisplayName={userDisplayName}
+      ultimatePurpose={ultimatePurpose}
       initialTasks={tasksResult.tasks || []}
       initialFixedHabits={tasksResult.fixedHabits || []}
       tasksError={tasksResult.error}

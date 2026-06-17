@@ -12,6 +12,7 @@ const fadeTransition = { duration: 0.4, ease: [0.22, 1, 0.36, 1] };
 export function DashboardShell({
   todayLabel,
   userDisplayName,
+  ultimatePurpose,
   initialTasks,
   initialFixedHabits,
   tasksError,
@@ -33,6 +34,22 @@ export function DashboardShell({
         </motion.div>
 
         <section className="relative min-h-[calc(100vh-2rem)] flex-1 rounded-[2rem] border border-zinc-200/70 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:p-10">
+          {ultimatePurpose ? (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mb-6 border-b border-zinc-100 pb-4 text-center dark:border-zinc-800"
+            >
+              <p className="text-[11px] font-semibold tracking-wide text-zinc-400 dark:text-zinc-500">
+                غايتك الكبرى
+              </p>
+              <p className="mt-1 text-sm font-medium leading-8 text-zinc-600 dark:text-zinc-300">
+                {ultimatePurpose}
+              </p>
+            </motion.div>
+          ) : null}
+
           <motion.div
             animate={{ opacity: isFocusActive ? 0 : 1 }}
             transition={fadeTransition}

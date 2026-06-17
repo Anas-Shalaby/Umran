@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "sonner";
+import { PwaInstallGuideHost } from "@/components/pwa-install-button";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -20,6 +21,11 @@ export const metadata: Metadata = {
     title: "عُمران",
   },
   icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icon-192.png",
     apple: "/icon-192.png",
   },
 };
@@ -30,10 +36,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" className={umranFont.variable} suppressHydrationWarning>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={umranFont.variable}
+      suppressHydrationWarning
+    >
       <body className="font-arabic antialiased bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           {children}
+          <PwaInstallGuideHost />
           <Toaster dir="rtl" richColors position="top-center" />
         </ThemeProvider>
       </body>

@@ -1,12 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import {
-  BarChart3,
-  Home,
-  NotebookPen,
-  Settings,
-  Target,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { BarChart3, Home, NotebookPen, Settings, Target } from "lucide-react";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { startNavigation } from "@/lib/navigation-progress";
 
 const navigationLinks = [
   { label: "الرئيسية", href: "/dashboard", icon: Home },
@@ -17,6 +17,22 @@ const navigationLinks = [
 ];
 
 export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  function navigate(href, event) {
+    if (href === activeHref) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    startNavigation();
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
   return (
     <aside className="rounded-[2rem] border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:min-h-[calc(100vh-3rem)] lg:w-72">
       <div className="mb-6 flex items-center justify-between gap-3 px-2">
@@ -48,6 +64,7 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
             key={item.label}
             {...item}
             active={item.href === activeHref}
+            onNavigate={navigate}
           />
         ))}
       </nav>
@@ -55,10 +72,11 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
   );
 }
 
-function SidebarLink({ label, href, icon: Icon, active = false }) {
+function SidebarLink({ label, href, icon: Icon, active = false, onNavigate }) {
   return (
     <Link
       href={href}
+      onClick={(event) => onNavigate(href, event)}
       aria-current={active ? "page" : undefined}
       className={`inline-flex min-w-max items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
         active
@@ -66,8 +84,8 @@ function SidebarLink({ label, href, icon: Icon, active = false }) {
           : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
       }`}
     >
-      <Icon className="h-4 w-4" />
-      {label}
+      <Icon className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
     </Link>
   );
 }

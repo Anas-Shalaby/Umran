@@ -39,7 +39,7 @@ export async function getTodayJournal() {
     .maybeSingle();
 
   if (error) {
-    return { error: "تعذر تحميل كُناشة اليوم.", journal: null };
+    return { error: "تعذر تحميل دفتر اليوم.", journal: null };
   }
 
   return { journal: data };
@@ -82,10 +82,13 @@ export async function submitJournal(proud, distraction, note) {
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "لقد أغلقت دفتر اليوم بالفعل. لا يمكن إرسال أكثر من كُناشة واحدة يومياً." };
+      return {
+        error:
+          "لقد أغلقت دفتر اليوم بالفعل. لا يمكن إرسال أكثر من دفتر واحدة يومياً.",
+      };
     }
 
-    return { error: "تعذر حفظ كُناشة الليل. حاول مرة أخرى." };
+    return { error: "تعذر حفظ دفتر الليل. حاول مرة أخرى." };
   }
 
   revalidatePath("/dashboard/journal");

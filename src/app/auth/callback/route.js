@@ -30,16 +30,20 @@ export async function GET(request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, phone")
+    .select("display_name, phone, has_onboarded")
     .eq("id", user.id)
     .maybeSingle();
 
   const requestedNext = searchParams.get("next");
   const needsProfileSetup = !profile?.display_name || !profile?.phone;
 
-  let next = "/dashboard";
   if (needsProfileSetup) {
-    next = "/profile/setup";
+    return NextResponse.redirect(`${origin}/profile/setup`);
+  }
+
+  let next = "/dashboard";
+  if (!profile?.has_onboarded) {
+    next = "/dashboard/onboarding";
   } else if (requestedNext?.startsWith("/")) {
     next = requestedNext;
   }

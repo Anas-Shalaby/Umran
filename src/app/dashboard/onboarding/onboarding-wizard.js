@@ -13,6 +13,8 @@ import {
 import { toast } from "sonner";
 import { completeOnboarding } from "./actions";
 
+const DEFAULT_PURPOSE = "إرضاء الله عز وجل";
+
 const HABIT_PRESETS = [
   { name: "صلاة الجماعة في المسجد", defaultAnchor: "fajr" },
   { name: "الورد القرآني اليومي", defaultAnchor: "fajr" },
@@ -51,6 +53,7 @@ const stepVariants = {
 
 export function OnboardingWizard() {
   const [step, setStep] = useState(1);
+  const [ultimatePurpose, setUltimatePurpose] = useState(DEFAULT_PURPOSE);
   const [habits, setHabits] = useState(buildInitialHabits);
   const [tasks, setTasks] = useState(["", "", ""]);
   const [isPending, startTransition] = useTransition();
@@ -86,18 +89,31 @@ export function OnboardingWizard() {
     );
   }
 
-  function handleNextFromStep2() {
+  function handleNextFromStep1() {
+    if (!ultimatePurpose.trim()) {
+      toast.error("اكتب غايتك الكبرى قبل المتابعة.");
+      return;
+    }
+
+    setStep(2);
+  }
+
+  function handleNextFromStep3() {
     if (tasks.some((task) => !task.trim())) {
       toast.error("اكتب ثغورك الثلاثة كاملة قبل المتابعة.");
       return;
     }
 
-    setStep(3);
+    setStep(4);
   }
 
   function handleComplete() {
     startTransition(async () => {
-      const result = await completeOnboarding(enabledHabits, filledTasks);
+      const result = await completeOnboarding(
+        ultimatePurpose,
+        enabledHabits,
+        filledTasks,
+      );
 
       if (result?.error) {
         toast.error(result.error);
@@ -108,7 +124,7 @@ export function OnboardingWizard() {
   return (
     <div className="mx-auto w-full max-w-2xl">
       <div className="mb-8 flex items-center justify-center gap-2">
-        {[1, 2, 3].map((item) => (
+        {[1, 2, 3, 4].map((item) => (
           <div
             key={item}
             className={`h-1.5 rounded-full transition-all ${
@@ -134,8 +150,61 @@ export function OnboardingWizard() {
               transition={{ duration: 0.25 }}
               className="space-y-6"
             >
+              <div className="text-center sm:text-start">
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                  الخطوة ١ من ٤
+                </p>
+                <h1 className="mt-2 text-2xl font-black leading-10 text-zinc-950 dark:text-zinc-50">
+                  قبل أن نهندس يومك.. ما هي غايتك الكبرى من هذا السعي؟
+                </h1>
+                <p className="mt-2 text-sm font-medium leading-7 text-zinc-500 dark:text-zinc-400">
+                  اكتب غايتك مرة واحدة، وستبقى أمامك كتذكير هادئ في كل يوم.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="ultimate-purpose"
+                  className="text-sm font-bold text-zinc-800 dark:text-zinc-200"
+                >
+                  غايتك الكبرى
+                </label>
+                <input
+                  id="ultimate-purpose"
+                  type="text"
+                  value={ultimatePurpose}
+                  onChange={(event) => setUltimatePurpose(event.target.value)}
+                  className="h-12 w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 text-sm font-semibold text-zinc-950 shadow-sm transition focus-visible:border-emerald-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+                />
+              </div>
+
+              <div className="flex justify-end border-t border-zinc-100 pt-6 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={handleNextFromStep1}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-5 text-sm font-bold text-white transition hover:bg-zinc-800"
+                >
+                  التالي
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+              </div>
+            </motion.div>
+          ) : null}
+
+          {step === 2 ? (
+            <motion.div
+              key="step-2"
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.25 }}
+              className="space-y-6"
+            >
               <div>
-                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">الخطوة ١ من ٣</p>
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                  الخطوة ٢ من ٤
+                </p>
                 <h1 className="mt-2 text-2xl font-black text-zinc-950 dark:text-zinc-50">
                   الأوراد الثابتة
                 </h1>
@@ -169,7 +238,9 @@ export function OnboardingWizard() {
                             })
                           }
                           className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-                            config.enabled ? "bg-zinc-900 dark:bg-zinc-50" : "bg-zinc-200 dark:bg-zinc-700"
+                            config.enabled
+                              ? "bg-zinc-900 dark:bg-zinc-50"
+                              : "bg-zinc-200 dark:bg-zinc-700"
                           }`}
                           aria-label={`تفعيل ${preset.name}`}
                         >
@@ -208,10 +279,18 @@ export function OnboardingWizard() {
                 })}
               </div>
 
-              <div className="flex justify-end border-t border-zinc-100 pt-6 dark:border-zinc-800">
+              <div className="flex items-center justify-between border-t border-zinc-100 pt-6 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(1)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  السابق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-5 text-sm font-bold text-white transition hover:bg-zinc-800"
                 >
                   التالي
@@ -221,9 +300,9 @@ export function OnboardingWizard() {
             </motion.div>
           ) : null}
 
-          {step === 2 ? (
+          {step === 3 ? (
             <motion.div
-              key="step-2"
+              key="step-3"
               variants={stepVariants}
               initial="initial"
               animate="animate"
@@ -232,7 +311,9 @@ export function OnboardingWizard() {
               className="space-y-6"
             >
               <div>
-                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">الخطوة ٢ من ٣</p>
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                  الخطوة ٣ من ٤
+                </p>
                 <h1 className="mt-2 text-2xl font-black text-zinc-950 dark:text-zinc-50">
                   ثغورك الثلاثة
                 </h1>
@@ -267,7 +348,7 @@ export function OnboardingWizard() {
               <div className="flex items-center justify-between border-t border-zinc-100 pt-6 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(2)}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   <ArrowRight className="h-4 w-4" />
@@ -275,7 +356,7 @@ export function OnboardingWizard() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleNextFromStep2}
+                  onClick={handleNextFromStep3}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-5 text-sm font-bold text-white transition hover:bg-zinc-800"
                 >
                   التالي
@@ -285,9 +366,9 @@ export function OnboardingWizard() {
             </motion.div>
           ) : null}
 
-          {step === 3 ? (
+          {step === 4 ? (
             <motion.div
-              key="step-3"
+              key="step-4"
               variants={stepVariants}
               initial="initial"
               animate="animate"
@@ -296,7 +377,9 @@ export function OnboardingWizard() {
               className="space-y-6"
             >
               <div className="text-center">
-                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">الخطوة ٣ من ٣</p>
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                  الخطوة ٤ من ٤
+                </p>
                 <h1 className="mt-2 text-2xl font-black text-zinc-950 dark:text-zinc-50">
                   الانطلاق
                 </h1>
@@ -307,6 +390,15 @@ export function OnboardingWizard() {
 
               <div className="space-y-4 rounded-xl border border-zinc-100 bg-zinc-50/50 p-5 dark:border-zinc-800 dark:bg-zinc-900/50">
                 <div>
+                  <p className="mb-2 text-[11px] font-bold text-zinc-500">
+                    غايتك الكبرى
+                  </p>
+                  <p className="text-sm font-semibold leading-7 text-zinc-800 dark:text-zinc-200">
+                    {ultimatePurpose.trim()}
+                  </p>
+                </div>
+
+                <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
                   <div className="mb-3 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-emerald-600" />
                     <p className="text-sm font-bold text-zinc-900">
@@ -374,7 +466,7 @@ export function OnboardingWizard() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   disabled={isPending}
                   className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >

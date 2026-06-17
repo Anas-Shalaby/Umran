@@ -268,8 +268,7 @@ export async function addTask(taskName, prayerAnchor) {
         .from("tasks")
         .select(TASK_FIELDS)
         .eq("user_id", user.id)
-        .eq("task_date", getTodayDate())
-        .neq("status", "backlog"),
+        .eq("task_date", getTodayDate()),
     ]);
 
   if (tasksError) {
@@ -294,7 +293,6 @@ export async function addTask(taskName, prayerAnchor) {
       task_name: cleanTaskName,
       prayer_anchor: cleanPrayerAnchor,
       task_date: getTodayDate(),
-      status: "active",
     })
     .select(TASK_FIELDS)
     .single();

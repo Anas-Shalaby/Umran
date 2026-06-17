@@ -24,11 +24,21 @@ async function getAuthenticatedUser() {
   return { supabase, user, error: null };
 }
 
-export async function completeOnboarding(fixedHabitsArray, dailyTasksArray) {
+export async function completeOnboarding(
+  ultimatePurpose,
+  fixedHabitsArray,
+  dailyTasksArray,
+) {
   const { supabase, user, error: authError } = await getAuthenticatedUser();
 
   if (authError) {
     return { error: authError };
+  }
+
+  const cleanPurpose = String(ultimatePurpose || "").trim();
+
+  if (!cleanPurpose) {
+    return { error: "اكتب غايتك الكبرى قبل المتابعة." };
   }
 
   const habits = Array.isArray(fixedHabitsArray) ? fixedHabitsArray : [];
@@ -109,7 +119,10 @@ export async function completeOnboarding(fixedHabitsArray, dailyTasksArray) {
 
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ has_onboarded: true })
+    .update({
+      has_onboarded: true,
+      ultimate_purpose: cleanPurpose,
+    })
     .eq("id", user.id);
 
   if (profileError) {

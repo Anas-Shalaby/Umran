@@ -193,5 +193,5 @@ export async function signOutUser() {
     return { error: "تعذر تسجيل الخروج. حاول مرة أخرى." };
   }
 
-  redirect("/login");
+  redirect("/");
 }
