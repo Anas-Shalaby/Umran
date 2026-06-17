@@ -14,6 +14,14 @@ export const metadata: Metadata = {
   title: "عمران",
   description:
     "منصة عُمران تجمع العمل العميق والعادات الروحية داخل أفواج تبني الإنجاز اليومي للأمة.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "عُمران",
+  },
+  icons: {
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({

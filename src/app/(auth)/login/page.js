@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { login } from "@/app/(auth)/actions";
-import { useRouter } from "next/navigation";
+import {
+  AuthDivider,
+  OAuthSignInButtons,
+} from "@/components/auth/google-sign-in-button";
 
 const fields = [
   {
@@ -29,10 +33,40 @@ const fields = [
 ];
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageFallback() {
+  return (
+    <main
+      dir="rtl"
+      className="min-h-screen bg-zinc-50/50 px-5 py-8 text-start text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 sm:px-6 lg:px-8"
+    >
+      <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+      </section>
+    </main>
+  );
+}
+
+function LoginPageContent() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError) {
+      setMessage(oauthError);
+      setMessageType("error");
+    }
+  }, [searchParams]);
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
@@ -74,6 +108,11 @@ export default function LoginPage() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="w-full rounded-[2rem] border border-zinc-200/70 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-12 lg:p-16"
         >
+          <ArrowLeft
+            className="absolute hover:text-zinc-500 dark:hover:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full p-2 top-4 left-4 cursor-pointer transition-all duration-300"
+            size={34}
+            onClick={() => router.push("/")}
+          />
           <div className="mx-auto max-w-md">
             <LoginHeader />
             <LoginForm
@@ -81,6 +120,14 @@ export default function LoginPage() {
               message={message}
               messageType={messageType}
               onSubmit={handleSubmit}
+            />
+            <AuthDivider />
+            <OAuthSignInButtons
+              disabled={pending}
+              onError={(errorMessage) => {
+                setMessage(errorMessage);
+                setMessageType("error");
+              }}
             />
             <RegisterPrompt />
           </div>

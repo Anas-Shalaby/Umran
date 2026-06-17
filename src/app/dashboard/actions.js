@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 const PRAYER_ANCHORS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 const TASK_FIELDS =
-  "id, user_id, task_name, prayer_anchor, is_completed, task_date, created_at";
+  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, created_at, goals:goals(title)";
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -268,7 +268,8 @@ export async function addTask(taskName, prayerAnchor) {
         .from("tasks")
         .select(TASK_FIELDS)
         .eq("user_id", user.id)
-        .eq("task_date", getTodayDate()),
+        .eq("task_date", getTodayDate())
+        .neq("status", "backlog"),
     ]);
 
   if (tasksError) {
@@ -293,12 +294,46 @@ export async function addTask(taskName, prayerAnchor) {
       task_name: cleanTaskName,
       prayer_anchor: cleanPrayerAnchor,
       task_date: getTodayDate(),
+      status: "active",
     })
     .select(TASK_FIELDS)
     .single();
 
   if (error) {
     return { error: "تعذر إضافة المهمة الآن." };
+  }
+
+  revalidatePath("/dashboard");
+  return { task: data };
+}
+
+export async function completeFocusTask(taskId, durationMinutes) {
+  const cleanTaskId = String(taskId || "").trim();
+  const cleanDuration = Math.max(0, Math.round(Number(durationMinutes) || 0));
+
+  if (!cleanTaskId) {
+    return { error: "لم يتم تحديد المهمة." };
+  }
+
+  const { supabase, user, error: authError } = await getAuthenticatedUser();
+
+  if (authError) {
+    return { error: authError };
+  }
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      is_completed: true,
+      duration_minutes: cleanDuration,
+    })
+    .eq("id", cleanTaskId)
+    .eq("user_id", user.id)
+    .select(TASK_FIELDS)
+    .single();
+
+  if (error) {
+    return { error: "تعذر حفظ أثر التركيز." };
   }
 
   revalidatePath("/dashboard");

@@ -5,6 +5,16 @@ import { SettingsPanel } from "./settings-panel";
 
 export const dynamic = "force-dynamic";
 
+function getConnectedApp(user, provider) {
+  const identity = user.identities?.find((item) => item.provider === provider);
+
+  return {
+    connected: Boolean(identity),
+    email: identity?.identity_data?.email || user.email || "",
+    canUnlink: Boolean(identity) && (user.identities?.length || 0) > 1,
+  };
+}
+
 export default async function SettingsPage() {
   const supabase = createSupabaseServerClient();
   const {
@@ -53,6 +63,13 @@ export default async function SettingsPage() {
             <SettingsPanel
               initialDisplayName={profile?.display_name || ""}
               initialFixedHabits={fixedHabits || []}
+              initialNewsletterSubscribed={
+                user.user_metadata?.newsletter_subscribed === true
+              }
+              connectedApps={{
+                google: getConnectedApp(user, "google"),
+                linkedin: getConnectedApp(user, "linkedin_oidc"),
+              }}
             />
           </div>
         </section>

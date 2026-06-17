@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSiteOrigin } from "@/lib/site-origin";
 
 function getSignupErrorMessage(error) {
   const message = error?.message?.toLowerCase() || "";
@@ -84,6 +85,47 @@ export async function signup(formData) {
       ? "تم إنشاء حسابك بنجاح. أكمل بيانات ظهورك في عُمران."
       : "تم إنشاء حسابك بنجاح. تحقق من بريدك الإلكتروني لتأكيد الدخول.",
   };
+}
+
+export async function signInWithGoogle() {
+  return signInWithOAuthProvider("google", {
+    queryParams: {
+      access_type: "offline",
+      prompt: "consent",
+    },
+  });
+}
+
+export async function signInWithLinkedIn() {
+  return signInWithOAuthProvider("linkedin_oidc");
+}
+
+async function signInWithOAuthProvider(provider, options = {}) {
+  const supabase = createSupabaseServerClient();
+  const origin = getSiteOrigin();
+  const providerLabel = provider === "linkedin_oidc" ? "LinkedIn" : "Google";
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+      ...options,
+    },
+  });
+
+  if (error) {
+    return {
+      error: `تعذر بدء تسجيل الدخول عبر ${providerLabel}. حاول مرة أخرى بعد لحظات.`,
+    };
+  }
+
+  if (!data?.url) {
+    return {
+      error: `تعذر بدء تسجيل الدخول عبر ${providerLabel}. حاول مرة أخرى بعد لحظات.`,
+    };
+  }
+
+  return { url: data.url };
 }
 
 export async function login(formData) {

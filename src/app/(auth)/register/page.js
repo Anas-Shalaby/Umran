@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { signup } from "@/app/(auth)/actions";
+import {
+  AuthDivider,
+  OAuthSignInButtons,
+} from "@/components/auth/google-sign-in-button";
 
 const fields = [
   {
@@ -87,6 +91,11 @@ export default function RegisterPage() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="w-full rounded-[2rem] border border-zinc-200/70 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-12 lg:p-16"
         >
+          <ArrowLeft
+            className="absolute hover:text-zinc-500 dark:hover:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full p-2 top-4 left-4 cursor-pointer transition-all duration-300"
+            size={34}
+            onClick={() => router.push("/")}
+          />
           <div className="mx-auto max-w-md">
             <RegisterHeader />
             <RegisterForm
@@ -94,6 +103,15 @@ export default function RegisterPage() {
               message={message}
               messageType={messageType}
               onSubmit={handleSubmit}
+            />
+            <AuthDivider />
+            <OAuthSignInButtons
+              registerMode
+              disabled={pending}
+              onError={(errorMessage) => {
+                setMessage(errorMessage);
+                setMessageType("error");
+              }}
             />
             <LoginPrompt />
           </div>
@@ -106,7 +124,9 @@ export default function RegisterPage() {
 function RegisterHeader() {
   return (
     <div className="mb-10 text-center">
-      <p className="mb-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">عُمران</p>
+      <p className="mb-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+        عُمران
+      </p>
       <h1 className="text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-4xl">
         إنشاء حساب جديد
       </h1>
@@ -189,7 +209,10 @@ function TextField({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium leading-none tracking-tight text-zinc-900 dark:text-zinc-50">
+      <label
+        htmlFor={id}
+        className="text-sm font-medium leading-none tracking-tight text-zinc-900 dark:text-zinc-50"
+      >
         {label}
       </label>
       <input
@@ -202,7 +225,9 @@ function TextField({
         autoComplete={autoComplete}
         className="flex h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-950 shadow-sm transition-colors placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-50 dark:focus-visible:ring-offset-zinc-950"
       />
-      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">{description}</p>
+      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+        {description}
+      </p>
     </div>
   );
 }

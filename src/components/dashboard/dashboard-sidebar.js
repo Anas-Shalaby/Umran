@@ -1,24 +1,22 @@
 import Link from "next/link";
 import {
   BarChart3,
-  BookOpenCheck,
-  Clock3,
   Home,
   NotebookPen,
   Settings,
-  ShieldCheck,
-  UsersRound,
+  Target,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const navigationLinks = [
   { label: "الرئيسية", href: "/dashboard", icon: Home },
+  { label: "الأهداف والخطوات", href: "/dashboard/goals", icon: Target },
   { label: "دفتر الليل", href: "/dashboard/journal", icon: NotebookPen },
   { label: "تقويم الأثر", href: "/dashboard/calendar", icon: BarChart3 },
   { label: "الإعدادات", href: "/dashboard/settings", icon: Settings },
 ];
 
-export function DashboardSidebar({ activeHref = "/dashboard" }) {
+export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
   return (
     <aside className="rounded-[2rem] border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:min-h-[calc(100vh-3rem)] lg:w-72">
       <div className="mb-6 flex items-center justify-between gap-3 px-2">
@@ -30,9 +28,15 @@ export function DashboardSidebar({ activeHref = "/dashboard" }) {
             <p className="text-base font-black tracking-tight text-zinc-950 dark:text-zinc-50">
               عُمران
             </p>
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              مساحة البناء
-            </p>
+            {userName ? (
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                أهلاً، {userName}
+              </p>
+            ) : (
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                مساحة البناء
+              </p>
+            )}
           </div>
         </div>
         <ThemeToggle />

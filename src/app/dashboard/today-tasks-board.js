@@ -56,7 +56,14 @@ const prayerBlocks = [
 
 const SPIRITUAL_BANNER_STORAGE_KEY = "umran-spiritual-banner-dismissed";
 
-export function TodayTasksBoard({ initialTasks, initialFixedHabits }) {
+const fadeTransition = { duration: 0.4, ease: [0.22, 1, 0.36, 1] };
+
+export function TodayTasksBoard({
+  initialTasks,
+  initialFixedHabits,
+  isFocusActive = false,
+  onFocusActiveChange,
+}) {
   const [tasks, setTasks] = useState(initialTasks);
   const [fixedHabits, setFixedHabits] = useState(initialFixedHabits);
   const [activeTab, setActiveTab] = useState(() => getCurrentPrayerAnchor());
@@ -193,178 +200,201 @@ export function TodayTasksBoard({ initialTasks, initialFixedHabits }) {
     setShowSpiritualBanner(false);
   }
 
-  return (
-    <div className="mx-auto w-full  space-y-6 px-4 py-6" dir="rtl">
-      <AnimatePresence initial={false}>
-        {showSpiritualBanner ? (
-          <motion.div
-            key="spiritual-banner"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative ml-3 mt-3"
-          >
-            <button
-              type="button"
-              onClick={handleDismissSpiritualBanner}
-              className="absolute -left-3 -top-3 z-20 grid h-6 w-6 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-500 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-              aria-label="إغلاق قسم الزاد الروحي"
-            >
-              <X className="h-3 w-3" />
-            </button>
+  function handleFocusTaskCompleted(updatedTask) {
+    setTasks((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === updatedTask.id ? updatedTask : currentTask,
+      ),
+    );
+  }
 
-            <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/50">
-              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
-                    الزاد الروحي
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                    {fixedHabits.length
-                      ? `${fixedHabits.length} عادة راتبة مفعّلة`
-                      : "لم تُفعّل أورادك الراتبة بعد"}
-                  </p>
-                </div>
-                <div className="shrink-0 self-start">
-                  <FixedHabitsSettings
-                    fixedHabits={fixedHabits}
-                    onSaved={handleBoardRefresh}
-                  />
+  return (
+    <div className="relative mx-auto w-full space-y-6 px-4 py-6" dir="rtl">
+      <motion.div
+        animate={{ opacity: isFocusActive ? 0 : 1 }}
+        transition={fadeTransition}
+        className={isFocusActive ? "pointer-events-none" : ""}
+      >
+        <AnimatePresence initial={false}>
+          {showSpiritualBanner ? (
+            <motion.div
+              key="spiritual-banner"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="relative ml-3 mt-3"
+            >
+              <button
+                type="button"
+                onClick={handleDismissSpiritualBanner}
+                className="absolute -left-3 -top-3 z-20 grid h-6 w-6 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-500 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                aria-label="إغلاق قسم الزاد الروحي"
+              >
+                <X className="h-3 w-3" />
+              </button>
+
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                      الزاد الروحي
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                      {fixedHabits.length
+                        ? `${fixedHabits.length} عادة راتبة مفعّلة`
+                        : "لم تُفعّل أورادك الراتبة بعد"}
+                    </p>
+                  </div>
+                  <div className="shrink-0 self-start">
+                    <FixedHabitsSettings
+                      fixedHabits={fixedHabits}
+                      onSaved={handleBoardRefresh}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </motion.div>
 
       <HyperFocusBanner
         tasks={tasks}
         fixedHabits={fixedHabits}
-        pendingTaskId={pendingTaskId}
-        onToggleTask={handleToggleTask}
+        isFocusActive={isFocusActive}
+        onFocusActiveChange={onFocusActiveChange}
+        onTaskCompleted={handleFocusTaskCompleted}
       />
 
-      <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
-        {prayerBlocks.map((block) => {
-          const isSelected = activeTab === block.key;
+      <motion.div
+        animate={{ opacity: isFocusActive ? 0 : 1 }}
+        transition={fadeTransition}
+        className={`space-y-6 ${isFocusActive ? "pointer-events-none" : ""}`}
+      >
+        <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
+          {prayerBlocks.map((block) => {
+            const isSelected = activeTab === block.key;
 
-          return (
-            <button
-              key={block.key}
-              type="button"
-              onClick={() => setActiveTab(block.key)}
-              className={`relative flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all ${
-                isSelected
-                  ? "text-zinc-950 dark:text-zinc-50"
-                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-              }`}
+            return (
+              <button
+                key={block.key}
+                type="button"
+                onClick={() => setActiveTab(block.key)}
+                className={`relative flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all ${
+                  isSelected
+                    ? "text-zinc-950 dark:text-zinc-50"
+                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                }`}
+              >
+                {isSelected ? (
+                  <motion.div
+                    layoutId="activePrayerTab"
+                    className="absolute inset-0 rounded-lg border border-zinc-200/40 bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                ) : null}
+                <span className="relative z-10">
+                  {block.title.split(" ")[1] || block.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="min-h-[380px] overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.article
+              key={activeTab}
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -15 }}
+              transition={{ duration: 0.2 }}
+              className="flex min-h-[380px] flex-col justify-between rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
             >
-              {isSelected ? (
-                <motion.div
-                  layoutId="activePrayerTab"
-                  className="absolute inset-0 rounded-lg border border-zinc-200/40 bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                />
-              ) : null}
-              <span className="relative z-10">
-                {block.title.split(" ")[1] || block.title}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="min-h-[380px] overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.article
-            key={activeTab}
-            initial={{ opacity: 0, x: 15 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -15 }}
-            transition={{ duration: 0.2 }}
-            className="flex min-h-[380px] flex-col justify-between rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
-          >
-            <div>
-              <div className="mb-6 flex items-center justify-between gap-4 border-b border-zinc-50 pb-4 dark:border-zinc-800">
-                <div>
-                  <h2 className="flex items-center gap-2 text-xl font-black text-zinc-900 dark:text-zinc-50">
-                    {currentBlock?.title}
-                  </h2>
-                  <p className="mt-1.5 text-xs font-medium leading-relaxed text-zinc-400">
-                    {currentBlock?.description}
-                  </p>
-                </div>
-                <div className="grid h-10 w-10 place-items-center rounded-xl border border-zinc-100/50 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                  {Icon ? <Icon className="h-5 w-5" /> : null}
-                </div>
-              </div>
-
-              <div className="custom-scrollbar max-h-[220px] space-y-2 overflow-y-auto pr-0.5">
-                {activeTasks.length ? (
-                  activeTasks.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      isFixed={isFixedHabitTask(task, fixedHabits)}
-                      pending={pendingTaskId === task.id}
-                      onToggleTask={handleToggleTask}
-                      onDeleteTask={handleDeleteTask}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-xl border border-dashed border-zinc-100 bg-zinc-50/30 py-8 text-center text-xs font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/30">
-                    لا توجد مهام مجدولة لهذا الوقت.
+              <div>
+                <div className="mb-6 flex items-center justify-between gap-4 border-b border-zinc-50 pb-4 dark:border-zinc-800">
+                  <div>
+                    <h2 className="flex items-center gap-2 text-xl font-black text-zinc-900 dark:text-zinc-50">
+                      {currentBlock?.title}
+                    </h2>
+                    <p className="mt-1.5 text-xs font-medium leading-relaxed text-zinc-400">
+                      {currentBlock?.description}
+                    </p>
                   </div>
-                )}
-              </div>
-            </div>
-
-            <form
-              onSubmit={handleAddTask}
-              className="mt-6 flex flex-col gap-2 border-t border-zinc-50 pt-4 dark:border-zinc-800"
-            >
-              {customTasksCount >= 3 ? (
-                <div>
-                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                    وصلت إلى ثغورك الثلاثة الدنيوية لليوم. لن تتم إضافة مهام
-                    جديدة للحفاظ على التركيز.
-                  </p>
-                  <p className="mt-1 block text-[11px] font-medium leading-relaxed text-zinc-400">
-                    💡 حقيقة علمية: حصر يومك في ٣ مهام كبرى يقضي على الشلل
-                    الهروبي لعقلك المشتت ويرفع جودة التنفيذ بنسبة ٨٥٪.
-                  </p>
+                  <div className="grid h-10 w-10 place-items-center rounded-xl border border-zinc-100/50 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
+                    {Icon ? <Icon className="h-5 w-5" /> : null}
+                  </div>
                 </div>
-              ) : null}
-              <div className="flex items-center gap-2">
-                <input
-                  name="task_name"
-                  type="text"
-                  disabled={isPending || customTasksCount >= 3}
-                  placeholder={`أضف مهمة دنيوية لوقت ${currentBlock?.title}...`}
-                  className="h-9 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-950 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-50"
-                />
-                <button
-                  type="submit"
-                  disabled={isPending || customTasksCount >= 3}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 shadow-sm transition hover:bg-zinc-800 disabled:opacity-50"
-                >
-                  {isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+
+                <div className="custom-scrollbar max-h-[220px] space-y-2 overflow-y-auto pr-0.5">
+                  {activeTasks.length ? (
+                    activeTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        isFixed={isFixedHabitTask(task, fixedHabits)}
+                        pending={pendingTaskId === task.id}
+                        onToggleTask={handleToggleTask}
+                        onDeleteTask={handleDeleteTask}
+                      />
+                    ))
                   ) : (
-                    <Plus className="h-4 w-4" />
+                    <div className="rounded-xl border border-dashed border-zinc-100 bg-zinc-50/30 py-8 text-center text-xs font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/30">
+                      لا توجد مهام مجدولة لهذا الوقت.
+                    </div>
                   )}
-                </button>
+                </div>
               </div>
-            </form>
-          </motion.article>
-        </AnimatePresence>
-      </div>
+
+              <form
+                onSubmit={handleAddTask}
+                className="mt-6 flex flex-col gap-2 border-t border-zinc-50 pt-4 dark:border-zinc-800"
+              >
+                {customTasksCount >= 3 ? (
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                      وصلت إلى ثغورك الثلاثة الدنيوية لليوم. لن تتم إضافة مهام
+                      جديدة للحفاظ على التركيز.
+                    </p>
+                    <p className="mt-1 block text-[11px] font-medium leading-relaxed text-zinc-400">
+                      حقيقة علمية: حصر يومك في ٣ مهام كبرى يقضي على الشلل
+                      الهروبي لعقلك المشتت ويرفع جودة التنفيذ بنسبة ٨٥٪.
+                    </p>
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  <input
+                    name="task_name"
+                    type="text"
+                    disabled={isPending || customTasksCount >= 3}
+                    placeholder={`أضف مهمة دنيوية لوقت ${currentBlock?.title}...`}
+                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-950 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isPending || customTasksCount >= 3}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 shadow-sm transition hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.article>
+          </AnimatePresence>
+        </div>
+      </motion.div>
     </div>
   );
 }
 
 function TaskItem({ task, isFixed, pending, onToggleTask, onDeleteTask }) {
+  const goalTitle = task?.goals?.title || "";
+
   return (
     <motion.div
       layout
@@ -402,16 +432,23 @@ function TaskItem({ task, isFixed, pending, onToggleTask, onDeleteTask }) {
           {isFixed ? (
             <Star className="h-3.5 w-3.5 shrink-0 fill-emerald-500 text-emerald-500" />
           ) : null}
-          <span
-            className={`truncate text-xs font-semibold transition ${
-              task.is_completed
-                ? "text-zinc-400 line-through"
-                : isFixed
-                  ? "text-emerald-900 dark:text-emerald-300"
-                  : "text-zinc-800 dark:text-zinc-200"
-            }`}
-          >
-            {task.task_name}
+          <span className="min-w-0 flex-1">
+            <span
+              className={`block truncate text-xs font-semibold transition ${
+                task.is_completed
+                  ? "text-zinc-400 line-through"
+                  : isFixed
+                    ? "text-emerald-900 dark:text-emerald-300"
+                    : "text-zinc-800 dark:text-zinc-200"
+              }`}
+            >
+              {task.task_name}
+            </span>
+            {goalTitle ? (
+              <span className="mt-1 inline-flex max-w-full items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:border-indigo-900/70 dark:bg-indigo-950/40 dark:text-indigo-300">
+                الهدف: {goalTitle}
+              </span>
+            ) : null}
           </span>
         </span>
       </button>

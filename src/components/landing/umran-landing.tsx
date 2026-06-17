@@ -59,10 +59,10 @@ const pillars = [
 ];
 
 const impactGridPattern = [
-  0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3,
-  2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 2, 1, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2,
-  3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1,
-  2, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3,
+  0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1,
+  0, 1, 2, 1, 3, 2, 1, 0, 2, 1, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1,
+  0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3, 2, 1,
+  0, 1, 2, 1, 3, 2, 1, 0, 1, 2, 3,
 ];
 
 const levelColors: Record<number, string> = {
@@ -110,7 +110,10 @@ export function UmranLanding() {
   }, [router]);
 
   return (
-    <main dir="rtl" className="min-h-screen bg-white text-start text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+    <main
+      dir="rtl"
+      className="min-h-screen bg-white text-start text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50"
+    >
       <LandingNav />
 
       <div className="space-y-32">
@@ -173,9 +176,8 @@ function HeroSection() {
           transition={{ delay: 0.1 }}
           className="mx-auto mt-8 max-w-3xl text-base font-medium leading-8 text-zinc-500 dark:text-zinc-400 sm:text-lg"
         >
-          منصة تبسيطية مبرمجة عصبياً وسلوكياً لمساعدتك على دك التشتت، وإعادة
-          ضبط مستويات الدوبامين، وتنظيم مهامك الحياتية حول المرتكزات الثابتة
-          لليوم.
+          منصة تبسيطية مبرمجة عصبياً وسلوكياً لمساعدتك على دك التشتت، وإعادة ضبط
+          مستويات الدوبامين، وتنظيم مهامك الحياتية حول المرتكزات الثابتة لليوم.
         </motion.p>
 
         <motion.div
@@ -341,7 +343,9 @@ function ConsistencyGridSection() {
         >
           <div className="mb-4 flex items-center gap-2">
             <CalendarRange className="h-4 w-4 text-emerald-600" />
-            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">تقويم الأثر</p>
+            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+              تقويم الأثر
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-1.5">
@@ -386,9 +390,9 @@ function ConsistencyGridSection() {
             الاستمرارية هي النواة الحقيقية للإنجاز
           </h2>
           <p className="mt-4 text-sm font-medium leading-8 text-zinc-500 dark:text-zinc-400">
-            تتبع أثر صِيَك اليومي، واحمِ السلسلة البصرية من الانكسار. كل مربع
-            في تقويم الأثر يحكي قصة يومٍ أغلقت فيه ثغورك بوعي — فتتحول
-            الالتزامات الصغيرة إلى بناء نواة لا تُهزم.
+            تتبع أثر صِيَك اليومي، واحمِ السلسلة البصرية من الانكسار. كل مربع في
+            تقويم الأثر يحكي قصة يومٍ أغلقت فيه ثغورك بوعي — فتتحول الالتزامات
+            الصغيرة إلى بناء نواة لا تُهزم.
           </p>
           <Link
             href="/register"
