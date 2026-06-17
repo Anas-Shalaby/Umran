@@ -240,7 +240,7 @@ export function HyperFocusBanner({
                   className="flex shrink-0 items-baseline gap-3"
                 >
                   <p
-                    className="font-[Umran] text-3xl tracking-wider text-emerald-600 md:text-5xl dark:text-emerald-500"
+                    className="font-[Umran] text-2xl tracking-wider text-emerald-600 sm:text-3xl md:text-5xl dark:text-emerald-500"
                     aria-live="polite"
                     aria-label={`الوقت المنقضي ${formatElapsedTime(elapsedTime)}`}
                   >
@@ -250,13 +250,13 @@ export function HyperFocusBanner({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
               {!isFocusActive ? (
                 <button
                   type="button"
                   onClick={handleStartFocus}
                   disabled={isSaving || showCelebration}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-900 px-4 text-sm font-semibold text-zinc-50 transition hover:border-zinc-300 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:focus-visible:ring-offset-zinc-950"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-900 px-4 text-sm font-semibold text-zinc-50 transition hover:border-zinc-300 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 sm:h-10 sm:w-auto dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:focus-visible:ring-offset-zinc-950"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
                   بدء الاستغراق
@@ -267,7 +267,7 @@ export function HyperFocusBanner({
                     type="button"
                     onClick={handleEndFocus}
                     disabled={isSaving}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-bold text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 dark:focus-visible:ring-offset-zinc-950"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-bold text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 sm:h-10 sm:w-auto dark:focus-visible:ring-offset-zinc-950"
                   >
                     {isSaving ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -280,7 +280,7 @@ export function HyperFocusBanner({
                     type="button"
                     onClick={handleCancelSession}
                     disabled={isSaving}
-                    className=" font-medium rounded-md text-zinc-800 bg-zinc-100 transition hover:text-zinc-600 disabled:opacity-40 hover:bg-zinc-200  p-2 dark:text-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-400 dark:hover:bg-zinc-700"
+                    className="w-full rounded-md bg-zinc-100 p-2.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 hover:text-zinc-600 disabled:opacity-40 sm:w-auto dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 dark:hover:text-zinc-400"
                   >
                     إلغاء الجلسة
                   </button>
@@ -327,7 +327,7 @@ export function HyperFocusBanner({
     return (
       <motion.div
         layout
-        className="fixed inset-0 z-50 flex items-center justify-center bg-white/85 p-4 backdrop-blur-sm dark:bg-zinc-950/90 sm:p-8"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-white/85 p-3 backdrop-blur-sm dark:bg-zinc-950/90 sm:p-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

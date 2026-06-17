@@ -2,11 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import {
+  markUserCampTaskComplete,
+  revalidateCampForTask,
+} from "@/app/dashboard/camps/actions";
 
 const PRAYER_ANCHORS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 const TASK_FIELDS =
-  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, created_at, goals:goals(title)";
+  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, created_at, source_camp_task_id, goals:goals(title), camp_source:camp_tasks!source_camp_task_id(title, camps(title))";
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -334,6 +338,11 @@ export async function completeFocusTask(taskId, durationMinutes) {
     return { error: "تعذر حفظ أثر التركيز." };
   }
 
+  if (data?.source_camp_task_id) {
+    await markUserCampTaskComplete(data.source_camp_task_id);
+    await revalidateCampForTask(supabase, data.source_camp_task_id);
+  }
+
   revalidatePath("/dashboard");
   return { task: data };
 }
@@ -361,6 +370,11 @@ export async function toggleTask(taskId, currentState) {
 
   if (error) {
     return { error: "تعذر تحديث حالة المهمة." };
+  }
+
+  if (!currentState && data?.source_camp_task_id) {
+    await markUserCampTaskComplete(data.source_camp_task_id);
+    await revalidateCampForTask(supabase, data.source_camp_task_id);
   }
 
   revalidatePath("/dashboard");
