@@ -55,16 +55,16 @@ export function GoalsHub({ initialGoals }) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
+    <div className="mx-auto max-w-5xl space-y-6 sm:space-y-10">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-          <Target className="h-4 w-4" />
+          <Target className="h-4 w-4 shrink-0" />
           <p className="text-xs font-bold tracking-wide">مركز الأهداف</p>
         </div>
-        <h1 className="text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-4xl">
+        <h1 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl lg:text-4xl dark:text-zinc-50">
           غاياتك الكبرى
         </h1>
-        <p className="max-w-xl text-sm font-medium leading-7 text-zinc-500 dark:text-zinc-400">
+        <p className="max-w-xl text-xs font-medium leading-6 text-zinc-500 sm:text-sm sm:leading-7 dark:text-zinc-400">
           أضف هدفاً واحداً في كل مرة. ثم ادخل لبناء خطته بهدوء.
         </p>
       </header>
@@ -80,12 +80,12 @@ export function GoalsHub({ initialGoals }) {
             onChange={(event) => setGoalDraft(event.target.value)}
             disabled={isCreatingGoal}
             placeholder="مثال: قراءة كتاب الأدب المفرد"
-            className="h-12 flex-1 rounded-xl border-0 bg-transparent px-4 text-sm font-semibold text-zinc-950 placeholder:font-medium placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 dark:text-zinc-50 dark:placeholder:text-zinc-500"
+            className="h-11 min-h-[44px] flex-1 rounded-xl border-0 bg-transparent px-3 text-sm font-semibold text-zinc-950 placeholder:font-medium placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 sm:h-12 sm:px-4 dark:text-zinc-50 dark:placeholder:text-zinc-500"
           />
           <button
             type="submit"
             disabled={isCreatingGoal || !goalDraft.trim()}
-            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="inline-flex h-11 min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 sm:h-12 sm:px-5 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             {isCreatingGoal ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -113,10 +113,10 @@ export function GoalsHub({ initialGoals }) {
                   delay: index * 0.05,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className="group flex flex-col rounded-2xl border border-zinc-200/70 bg-white p-5 shadow-sm transition hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                className="group flex flex-col rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md sm:p-5 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
               >
                 <h2
-                  className={`mb-4 line-clamp-2 text-base font-black leading-7 text-zinc-950 dark:text-zinc-50 ${
+                  className={`mb-3 line-clamp-3 text-sm font-black leading-7 text-zinc-950 sm:mb-4 sm:line-clamp-2 sm:text-base dark:text-zinc-50 ${
                     goal.is_completed ? "text-zinc-400 line-through" : ""
                   }`}
                 >
@@ -161,7 +161,7 @@ export function GoalsHub({ initialGoals }) {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-6 py-16 text-center dark:border-zinc-800 dark:bg-zinc-950/50"
+          className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-12 text-center sm:px-6 sm:py-16 dark:border-zinc-800 dark:bg-zinc-950/50"
         >
           <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">
             لا توجد أهداف بعد.

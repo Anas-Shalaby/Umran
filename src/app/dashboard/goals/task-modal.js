@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import {
+  TaskModalShell,
+  taskModalCancelButtonClassName,
+  taskModalFooterClassName,
+  taskModalInputClassName,
+} from "@/components/dashboard/task-modal-shell";
 import { saveGoalTask } from "./actions";
 
 const PRAYER_OPTIONS = [
@@ -19,7 +24,8 @@ const PRIORITY_OPTIONS = [
     label: "حرِج",
     emoji: "🔴",
     ring: "ring-red-500/30",
-    active: "border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+    active:
+      "border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
   },
   {
     value: "medium",
@@ -47,11 +53,10 @@ const EMPTY_FORM = {
   expected_minutes: "",
 };
 
-const inputClassName =
-  "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 shadow-sm transition focus-visible:border-emerald-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/15 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
+const labelClassName = "text-xs font-bold text-zinc-800 sm:text-sm dark:text-zinc-200";
 
 const textareaClassName =
-  "min-h-[96px] w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium leading-7 text-zinc-900 shadow-sm transition focus-visible:border-emerald-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/15 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
+  "min-h-[96px] w-full resize-none rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-medium leading-7 text-zinc-900 shadow-sm transition focus-visible:border-emerald-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/15 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
 
 function buildFormFromTask(task) {
   if (!task) return { ...EMPTY_FORM };
@@ -110,183 +115,137 @@ export function TaskModal({ open, goalId, task, onClose, onSaved }) {
   }
 
   return (
-    <AnimatePresence>
-      {open ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/40 p-4 backdrop-blur-sm sm:items-center"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.98 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="تفاصيل الثغر"
-            dir="rtl"
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-6"
-            onClick={(event) => event.stopPropagation()}
+    <TaskModalShell
+      open={open}
+      onClose={onClose}
+      ariaLabel="تفاصيل الثغر"
+      eyebrow={isEditing ? "تعديل الثغر" : "ثغر جديد"}
+      title="تفاصيل الثغر"
+      maxWidth="max-w-2xl"
+      footer={
+        <div className={taskModalFooterClassName}>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className={taskModalCancelButtonClassName}
           >
-            <div className="mb-5 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  {isEditing ? "تعديل الثغر" : "ثغر جديد"}
-                </p>
-                <h2 className="mt-1 text-xl font-black text-zinc-950 dark:text-zinc-50">
-                  تفاصيل الثغر
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="grid h-9 w-9 place-items-center rounded-lg border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-                aria-label="إغلاق"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            إلغاء
+          </button>
+          <button
+            type="submit"
+            form="goal-task-form"
+            disabled={isSaving}
+            className="inline-flex h-11 min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            حفظ الثغر
+          </button>
+        </div>
+      }
+    >
+      <form id="goal-task-form" onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="task-name" className={labelClassName}>
+            اسم الثغرة <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="task-name"
+            type="text"
+            value={form.task_name}
+            onChange={(event) => updateField("task_name", event.target.value)}
+            disabled={isSaving}
+            placeholder="مثال: قراءة ١٥ صفحة"
+            className={taskModalInputClassName}
+          />
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="task-name"
-                  className="text-sm font-bold text-zinc-800 dark:text-zinc-200"
-                >
-                  اسم الثغرة <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="task-name"
-                  type="text"
-                  value={form.task_name}
-                  onChange={(event) => updateField("task_name", event.target.value)}
-                  disabled={isSaving}
-                  placeholder="مثال: قراءة ١٥ صفحة"
-                  className={inputClassName}
-                />
-              </div>
+        <div className="space-y-2">
+          <label htmlFor="task-prayer" className={labelClassName}>
+            موعد الصلاة
+          </label>
+          <select
+            id="task-prayer"
+            value={form.prayer_anchor}
+            onChange={(event) => updateField("prayer_anchor", event.target.value)}
+            disabled={isSaving}
+            className={taskModalInputClassName}
+          >
+            {PRAYER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="task-prayer"
-                  className="text-sm font-bold text-zinc-800 dark:text-zinc-200"
-                >
-                  موعد الصلاة
-                </label>
-                <select
-                  id="task-prayer"
-                  value={form.prayer_anchor}
-                  onChange={(event) => updateField("prayer_anchor", event.target.value)}
-                  disabled={isSaving}
-                  className={inputClassName}
-                >
-                  {PRAYER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="space-y-2">
+          <p className={labelClassName}>الأولوية</p>
+          <div className="grid grid-cols-3 gap-2">
+            {PRIORITY_OPTIONS.map((option) => {
+              const isActive = form.priority_level === option.value;
 
-              <div className="space-y-2">
-                <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-                  الأولوية
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {PRIORITY_OPTIONS.map((option) => {
-                    const isActive = form.priority_level === option.value;
-
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        disabled={isSaving}
-                        onClick={() => updateField("priority_level", option.value)}
-                        className={`rounded-xl border px-2 py-2.5 text-center text-xs font-bold transition ${
-                          isActive
-                            ? `${option.active} ring-2 ${option.ring}`
-                            : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
-                      >
-                        <span className="block text-base">{option.emoji}</span>
-                        <span className="mt-1 block">{option.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="task-duration"
-                  className="text-sm font-bold text-zinc-800 dark:text-zinc-200"
-                >
-                  الوقت المتوقع بالدقائق
-                </label>
-                <input
-                  id="task-duration"
-                  type="number"
-                  min="1"
-                  max="480"
-                  value={form.expected_minutes}
-                  onChange={(event) =>
-                    updateField("expected_minutes", event.target.value)
-                  }
-                  disabled={isSaving}
-                  placeholder="مثال: 25"
-                  className={inputClassName}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="task-description"
-                  className="text-sm font-bold text-zinc-800 dark:text-zinc-200"
-                >
-                  الوصف / الملاحظات
-                </label>
-                <textarea
-                  id="task-description"
-                  value={form.description}
-                  onChange={(event) => updateField("description", event.target.value)}
-                  disabled={isSaving}
-                  placeholder="أضف ملاحظات أو تفاصيل الثغر..."
-                  className={textareaClassName}
-                />
-              </div>
-
-              {error ? (
-                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                  {error}
-                </p>
-              ) : null}
-
-              <div className="flex items-center justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+              return (
                 <button
+                  key={option.value}
                   type="button"
-                  onClick={onClose}
                   disabled={isSaving}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  onClick={() => updateField("priority_level", option.value)}
+                  className={`min-h-[72px] rounded-xl border px-1.5 py-2 text-center text-[11px] font-bold transition sm:px-2 sm:py-2.5 sm:text-xs ${
+                    isActive
+                      ? `${option.active} ring-2 ${option.ring}`
+                      : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                  }`}
                 >
-                  إلغاء
+                  <span className="block text-base">{option.emoji}</span>
+                  <span className="mt-1 block">{option.label}</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  حفظ الثغر
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="task-duration" className={labelClassName}>
+            الوقت المتوقع بالدقائق
+          </label>
+          <input
+            id="task-duration"
+            type="number"
+            min="1"
+            max="480"
+            inputMode="numeric"
+            value={form.expected_minutes}
+            onChange={(event) =>
+              updateField("expected_minutes", event.target.value)
+            }
+            disabled={isSaving}
+            placeholder="مثال: 25"
+            className={taskModalInputClassName}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="task-description" className={labelClassName}>
+            الوصف / الملاحظات
+          </label>
+          <textarea
+            id="task-description"
+            value={form.description}
+            onChange={(event) => updateField("description", event.target.value)}
+            disabled={isSaving}
+            placeholder="أضف ملاحظات أو تفاصيل الثغر..."
+            className={textareaClassName}
+          />
+        </div>
+
+        {error ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+            {error}
+          </p>
+        ) : null}
+      </form>
+    </TaskModalShell>
   );
 }
 

@@ -17,12 +17,16 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("has_onboarded")
+    .select("has_onboarded, ultimate_purpose")
     .eq("id", user.id)
     .maybeSingle();
 
   if (profile?.has_onboarded) {
     redirect("/dashboard");
+  }
+
+  if (!profile?.ultimate_purpose?.trim()) {
+    redirect("/onboarding");
   }
 
   return (
@@ -47,7 +51,7 @@ export default async function OnboardingPage() {
           </h2>
         </div>
 
-        <OnboardingWizard />
+        <OnboardingWizard savedPurpose={profile?.ultimate_purpose || ""} />
       </div>
     </main>
   );

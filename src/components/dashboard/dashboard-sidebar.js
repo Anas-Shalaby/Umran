@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { startNavigation } from "@/lib/navigation-progress";
 
 const navigationLinks = [
@@ -26,10 +27,36 @@ const navigationLinks = [
   { label: "الإعدادات", href: "/dashboard/settings", icon: Settings },
 ];
 
+function useIsLargeScreen() {
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsLargeScreen(mediaQuery.matches);
+
+    update();
+    mediaQuery.addEventListener("change", update);
+
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  return isLargeScreen;
+}
+
+function SidebarHeaderActions() {
+  return (
+    <div className="flex items-center gap-1.5">
+      <NotificationBell />
+      <ThemeToggle />
+    </div>
+  );
+}
+
 export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isLargeScreen = useIsLargeScreen();
 
   useEffect(() => {
     setMobileOpen(false);
@@ -81,7 +108,7 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <ThemeToggle />
+          {!isLargeScreen ? <SidebarHeaderActions /> : null}
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
@@ -174,7 +201,9 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
               )}
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1.5">
+            {isLargeScreen ? <SidebarHeaderActions /> : null}
+          </div>
         </div>
 
         <nav className="flex flex-col gap-1.5">

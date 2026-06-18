@@ -6,6 +6,7 @@ import {
   Check,
   Loader2,
   Moon,
+  Pencil,
   Plus,
   Sparkles,
   Star,
@@ -17,9 +18,16 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { addTask, toggleTask, deleteTask } from "./actions";
+import { EditTaskModal } from "./edit-task-modal";
+import { TASK_ADDED_EVENT } from "@/components/dashboard/dashboard-add-task-fab";
+import { FixedHabitToggle } from "./fixed-habit-toggle";
 import { FixedHabitsSettings, isFixedHabitTask } from "./fixed-habits-settings";
 import { HyperFocusBanner } from "./hyper-focus-banner";
-import { getCurrentPrayerAnchor } from "./prayer-time";
+import { getCurrentPrayerAnchor, getLocalTodayDate } from "./prayer-time";
+import {
+  UpcomingTasksSection,
+  formatTaskScheduledTime,
+} from "./upcoming-tasks-section";
 
 const prayerBlocks = [
   {
@@ -63,16 +71,38 @@ const SPIRITUAL_BANNER_STORAGE_KEY = "umran-spiritual-banner-dismissed";
 
 const fadeTransition = { duration: 0.4, ease: [0.22, 1, 0.36, 1] };
 
+function insertUpcomingTask(currentTasks, task) {
+  return [...currentTasks, task].sort((a, b) => {
+    if (a.task_date !== b.task_date) {
+      return a.task_date.localeCompare(b.task_date);
+    }
+
+    const aTime = a.scheduled_time || "";
+    const bTime = b.scheduled_time || "";
+
+    if (aTime && bTime && aTime !== bTime) {
+      return aTime.localeCompare(bTime);
+    }
+
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+}
+
 export function TodayTasksBoard({
   initialTasks,
   initialFixedHabits,
+  initialUpcomingTasks = [],
   isFocusActive = false,
   onFocusActiveChange,
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [fixedHabits, setFixedHabits] = useState(initialFixedHabits);
+  const [upcomingTasks, setUpcomingTasks] = useState(initialUpcomingTasks);
+  const [scheduleDate, setScheduleDate] = useState(() => getLocalTodayDate());
+  const [isFixedHabit, setIsFixedHabit] = useState(false);
   const [activeTab, setActiveTab] = useState(() => getCurrentPrayerAnchor());
   const [pendingTaskId, setPendingTaskId] = useState("");
+  const [editingTask, setEditingTask] = useState(null);
   const [showSpiritualBanner, setShowSpiritualBanner] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -86,6 +116,18 @@ export function TodayTasksBoard({
 
   const currentBlock = prayerBlocks.find((block) => block.key === activeTab);
   const Icon = currentBlock?.icon;
+  const todayDate = getLocalTodayDate();
+  const isSchedulingToday = scheduleDate === todayDate;
+  const isAtTodayLimit =
+    isSchedulingToday && customTasksCount >= 3 && !isFixedHabit;
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
+  useEffect(() => {
+    setUpcomingTasks(initialUpcomingTasks);
+  }, [initialUpcomingTasks]);
 
   useEffect(() => {
     const isDismissed =
@@ -93,9 +135,49 @@ export function TodayTasksBoard({
     setShowSpiritualBanner(!isDismissed);
   }, []);
 
+  useEffect(() => {
+    function handleTaskAdded(event) {
+      applyNewTaskResult(event.detail, { silent: true });
+    }
+
+    window.addEventListener(TASK_ADDED_EVENT, handleTaskAdded);
+
+    return () => {
+      window.removeEventListener(TASK_ADDED_EVENT, handleTaskAdded);
+    };
+  }, []);
+
   function handleBoardRefresh({ tasks: nextTasks, fixedHabits: nextHabits }) {
     setTasks(nextTasks);
     setFixedHabits(nextHabits);
+  }
+
+  function applyNewTaskResult(result, { silent = false } = {}) {
+    if (!result?.task) return;
+
+    if (result.fixedHabits) {
+      setFixedHabits(result.fixedHabits);
+    }
+
+    if (result.isScheduled) {
+      setUpcomingTasks((current) => insertUpcomingTask(current, result.task));
+      if (!silent) {
+        toast.success("تمت جدولة المهمة.", {
+          position: "top-right",
+          style: { fontFamily: "Umran" },
+        });
+      }
+      return;
+    }
+
+    setTasks((currentTasks) => [...currentTasks, result.task]);
+    setActiveTab(result.task.prayer_anchor);
+    if (!silent) {
+      toast.success("تمت إضافة المهمة.", {
+        position: "top-right",
+        style: { fontFamily: "Umran" },
+      });
+    }
   }
 
   function handleAddTask(event) {
@@ -103,6 +185,10 @@ export function TodayTasksBoard({
 
     const formData = new FormData(event.target);
     const taskName = String(formData.get("task_name") || "").trim();
+    const taskDate = String(formData.get("task_date") || scheduleDate).trim();
+    const scheduledTime = String(formData.get("scheduled_time") || "").trim();
+    const makeFixedHabit =
+      formData.get("is_fixed_habit") === "on" || isFixedHabit;
 
     if (!taskName) {
       toast.error("اكتب اسم المهمة أولاً.", {
@@ -114,7 +200,7 @@ export function TodayTasksBoard({
       return;
     }
 
-    if (customTasksCount >= 3) {
+    if (taskDate === todayDate && customTasksCount >= 3 && !makeFixedHabit) {
       toast.warning("اكتفي بثلاث مهام دنيوية اليوم", {
         style: {
           fontFamily: "Umran",
@@ -128,21 +214,23 @@ export function TodayTasksBoard({
     }
 
     startTransition(async () => {
-      const result = await addTask(taskName, activeTab);
+      const result = await addTask(
+        taskName,
+        activeTab,
+        taskDate,
+        scheduledTime || null,
+        makeFixedHabit,
+      );
 
       if (result?.error) {
         toast.error(result.error);
       }
 
       if (result?.task) {
-        setTasks((currentTasks) => [...currentTasks, result.task]);
+        applyNewTaskResult(result);
         event.target.reset();
-        toast.success("تمت إضافة المهمة.", {
-          position: "top-right",
-          style: {
-            fontFamily: "Umran",
-          },
-        });
+        setScheduleDate(todayDate);
+        setIsFixedHabit(false);
       }
     });
   }
@@ -176,6 +264,57 @@ export function TodayTasksBoard({
     });
   }
 
+  function handleEditSaved(result) {
+    const {
+      task,
+      wasToday,
+      isToday,
+      wasScheduled,
+      isScheduled,
+      fixedHabits: nextHabits,
+    } = result;
+
+    if (nextHabits) {
+      setFixedHabits(nextHabits);
+    }
+
+    if (wasToday && isScheduled) {
+      setTasks((current) => current.filter((item) => item.id !== task.id));
+      setUpcomingTasks((current) =>
+        insertUpcomingTask(
+          current.filter((item) => item.id !== task.id),
+          task,
+        ),
+      );
+    } else if (wasScheduled && isToday) {
+      setUpcomingTasks((current) =>
+        current.filter((item) => item.id !== task.id),
+      );
+      setTasks((current) => [
+        ...current.filter((item) => item.id !== task.id),
+        task,
+      ]);
+    } else if (isToday) {
+      setTasks((current) =>
+        current.map((item) => (item.id === task.id ? task : item)),
+      );
+    } else if (isScheduled) {
+      setUpcomingTasks((current) =>
+        insertUpcomingTask(
+          current.filter((item) => item.id !== task.id),
+          task,
+        ),
+      );
+    }
+
+    toast.success("تم تحديث المهمة.", {
+      position: "top-right",
+      style: {
+        fontFamily: "Umran",
+      },
+    });
+  }
+
   function handleDeleteTask(task) {
     const previousTasks = tasks;
     setTasks((currentTasks) =>
@@ -189,6 +328,10 @@ export function TodayTasksBoard({
         toast.error(result.error);
         setTasks(previousTasks);
         return;
+      }
+
+      if (result.fixedHabits) {
+        setFixedHabits(result.fixedHabits);
       }
 
       toast.success("تم حذف المهمة.", {
@@ -214,7 +357,10 @@ export function TodayTasksBoard({
   }
 
   return (
-    <div className="relative mx-auto w-full min-w-0 space-y-4 sm:space-y-6" dir="rtl">
+    <div
+      className="relative mx-auto w-full min-w-0 space-y-4 sm:space-y-6"
+      dir="rtl"
+    >
       <motion.div
         animate={{ opacity: isFocusActive ? 0 : 1 }}
         transition={fadeTransition}
@@ -314,6 +460,13 @@ export function TodayTasksBoard({
           })}
         </div>
 
+        <UpcomingTasksSection
+          tasks={upcomingTasks}
+          onTasksChange={setUpcomingTasks}
+          onEditTask={setEditingTask}
+          onFixedHabitsChange={setFixedHabits}
+        />
+
         <div className="min-h-[320px] overflow-hidden sm:min-h-[380px]">
           <AnimatePresence mode="wait">
             <motion.article
@@ -348,6 +501,7 @@ export function TodayTasksBoard({
                         isFixed={isFixedHabitTask(task, fixedHabits)}
                         pending={pendingTaskId === task.id}
                         onToggleTask={handleToggleTask}
+                        onEditTask={setEditingTask}
                         onDeleteTask={handleDeleteTask}
                       />
                     ))
@@ -358,55 +512,33 @@ export function TodayTasksBoard({
                   )}
                 </div>
               </div>
-
-              <form
-                onSubmit={handleAddTask}
-                className="mt-4 flex flex-col gap-2 border-t border-zinc-50 pt-3 sm:mt-6 sm:pt-4 dark:border-zinc-800"
-              >
-                {customTasksCount >= 3 ? (
-                  <div>
-                    <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                      وصلت إلى ثغورك الثلاثة الدنيوية لليوم. لن تتم إضافة مهام
-                      جديدة للحفاظ على التركيز.
-                    </p>
-                    <p className="mt-1 block text-[11px] font-medium leading-relaxed text-zinc-400">
-                      حقيقة علمية: حصر يومك في ٣ مهام كبرى يقضي على الشلل
-                      الهروبي لعقلك المشتت ويرفع جودة التنفيذ بنسبة ٨٥٪.
-                    </p>
-                  </div>
-                ) : null}
-                <div className="flex items-center gap-2">
-                  <input
-                    name="task_name"
-                    type="text"
-                    disabled={isPending || customTasksCount >= 3}
-                    placeholder={`أضف مهمة لوقت ${currentBlock?.shortTitle}...`}
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-950 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 disabled:opacity-50 sm:h-9 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-50"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isPending || customTasksCount >= 3}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 shadow-sm transition hover:bg-zinc-800 disabled:opacity-50 sm:h-9 sm:w-9"
-                  >
-                    {isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </form>
             </motion.article>
           </AnimatePresence>
         </div>
       </motion.div>
+
+      <EditTaskModal
+        open={Boolean(editingTask)}
+        task={editingTask}
+        fixedHabits={fixedHabits}
+        onClose={() => setEditingTask(null)}
+        onSaved={handleEditSaved}
+      />
     </div>
   );
 }
 
-function TaskItem({ task, isFixed, pending, onToggleTask, onDeleteTask }) {
+function TaskItem({
+  task,
+  isFixed,
+  pending,
+  onToggleTask,
+  onEditTask,
+  onDeleteTask,
+}) {
   const goalTitle = task?.goals?.title || "";
   const campTitle = task?.camp_source?.camps?.title || "";
+  const scheduledTimeLabel = formatTaskScheduledTime(task.scheduled_time);
 
   return (
     <motion.div
@@ -452,27 +584,32 @@ function TaskItem({ task, isFixed, pending, onToggleTask, onDeleteTask }) {
               ) : null}
               <span
                 className={`block text-xs font-semibold leading-5 transition sm:truncate ${
-                task.is_completed
-                  ? "text-zinc-400 line-through"
-                  : isFixed
-                    ? "text-emerald-900 dark:text-emerald-300"
-                    : "text-zinc-800 dark:text-zinc-200"
-              }`}
-            >
-              {task.task_name}
-            </span>
+                  task.is_completed
+                    ? "text-zinc-400 line-through"
+                    : isFixed
+                      ? "text-emerald-900 dark:text-emerald-300"
+                      : "text-zinc-800 dark:text-zinc-200"
+                }`}
+              >
+                {task.task_name}
+              </span>
             </span>
             <div className="flex flex-wrap gap-1">
-            {goalTitle ? (
-              <span className="inline-flex max-w-full items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:border-indigo-900/70 dark:bg-indigo-950/40 dark:text-indigo-300">
-                الهدف: {goalTitle}
-              </span>
-            ) : null}
-            {campTitle ? (
-              <span className="inline-flex max-w-full items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
-                معسكر: {campTitle}
-              </span>
-            ) : null}
+              {scheduledTimeLabel ? (
+                <span className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                  {scheduledTimeLabel}
+                </span>
+              ) : null}
+              {goalTitle ? (
+                <span className="inline-flex max-w-full items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:border-indigo-900/70 dark:bg-indigo-950/40 dark:text-indigo-300">
+                  الهدف: {goalTitle}
+                </span>
+              ) : null}
+              {campTitle ? (
+                <span className="inline-flex max-w-full items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
+                  معسكر: {campTitle}
+                </span>
+              ) : null}
             </div>
           </span>
         </span>
@@ -483,17 +620,27 @@ function TaskItem({ task, isFixed, pending, onToggleTask, onDeleteTask }) {
           <Sparkles className="h-3 w-3" />
           راتب
         </span>
-      ) : (
+      ) : null}
+      <div className="flex shrink-0 items-center gap-0.5 self-start sm:self-center">
+        <button
+          type="button"
+          onClick={() => onEditTask?.(task)}
+          disabled={pending}
+          className="grid h-7 w-7 place-items-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          aria-label={`تعديل ${task.task_name}`}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
         <button
           type="button"
           onClick={() => onDeleteTask(task)}
           disabled={pending}
-          className="grid h-7 w-7 shrink-0 self-start place-items-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:opacity-50 sm:self-center dark:hover:bg-red-950/50 dark:hover:text-red-400"
+          className="grid h-7 w-7 place-items-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/50 dark:hover:text-red-400"
           aria-label={`حذف ${task.task_name}`}
         >
           <Trash className="h-3.5 w-3.5" />
         </button>
-      )}
+      </div>
     </motion.div>
   );
 }

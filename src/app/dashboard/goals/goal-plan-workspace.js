@@ -170,48 +170,38 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
     });
   }
 
-  function handleDescriptionBlur() {
-    const nextValue = goalDescription.trim();
-    const previousValue = String(goal.plan_description || "").trim();
-
-    if (nextValue === previousValue) return;
-
-    setIsSavingDescription(true);
-  }
-
   return (
     <>
-      <div className="mx-auto max-w-5xl space-y-8 pb-10">
+      <div className="mx-auto max-w-5xl space-y-6 pb-6 sm:space-y-8 sm:pb-10">
         <Link
           href="/dashboard/goals"
-          className="inline-flex items-center gap-2 text-sm font-bold text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+          className="inline-flex items-center gap-2 text-xs font-bold text-zinc-500 transition hover:text-zinc-800 sm:text-sm dark:text-zinc-400 dark:hover:text-zinc-200"
         >
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4 shrink-0" />
           العودة إلى الأهداف
         </Link>
 
-        {/* 1. Analytics Header */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900 sm:p-8"
+          className="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 lg:p-8"
         >
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1 space-y-4">
+          <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:text-start">
+            <div className="min-w-0 flex-1 space-y-3 sm:space-y-4">
               <p className="text-xs font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
                 خطة الهدف
               </p>
-              <h1 className="text-2xl font-black leading-tight text-zinc-950 dark:text-zinc-50 sm:text-3xl lg:text-4xl">
+              <h1 className="text-xl font-black leading-8 text-zinc-950 sm:text-2xl sm:leading-tight lg:text-4xl dark:text-zinc-50">
                 {goal.title}
               </h1>
 
-              <div className="flex flex-wrap gap-6">
+              <div className="flex flex-wrap justify-center gap-4 sm:justify-start sm:gap-6">
                 <div>
                   <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                     الثغور المنجزة
                   </p>
-                  <p className="mt-1 text-lg font-black text-zinc-900 dark:text-zinc-100">
+                  <p className="mt-1 text-base font-black text-zinc-900 sm:text-lg dark:text-zinc-100">
                     {completedCount}/{tasks.length}
                   </p>
                 </div>
@@ -219,29 +209,29 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
                   <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                     إجمالي الساعات المتوقعة
                   </p>
-                  <p className="mt-1 text-lg font-black text-zinc-900 dark:text-zinc-100">
+                  <p className="mt-1 text-base font-black text-zinc-900 sm:text-lg dark:text-zinc-100">
                     {totalHoursLabel}
                   </p>
                 </div>
               </div>
             </div>
 
-            <ProgressRing progress={progress} />
+            <ProgressRing progress={progress} size={76} />
           </div>
         </motion.section>
 
-        {/* 3. Task List */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-black text-zinc-950 dark:text-zinc-50">
+        <section className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <h2 className="text-base font-black text-zinc-950 sm:text-lg dark:text-zinc-50">
               ثغور الخطة
             </h2>
             <button
               type="button"
               onClick={openCreateModal}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-white transition hover:bg-emerald-600"
+              className="inline-flex h-11 min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-white transition hover:bg-emerald-600 sm:w-auto"
             >
-              <Plus className="h-4 w-4" />＋ إضافة ثغر
+              <Plus className="h-4 w-4" />
+              إضافة ثغر
             </button>
           </div>
 
@@ -266,12 +256,12 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
                       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                       className="group border-b border-zinc-100 last:border-b-0 dark:border-zinc-800"
                     >
-                      <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
+                      <div className="flex items-start gap-2.5 px-3 py-3 sm:items-center sm:gap-3 sm:px-4">
                         <button
                           type="button"
                           onClick={() => handleToggleTask(task)}
                           disabled={pendingTaskId === task.id}
-                          className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition disabled:opacity-60 ${
+                          className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition disabled:opacity-60 sm:mt-0 ${
                             task.is_completed
                               ? "border-emerald-500 bg-emerald-500 text-white"
                               : "border-zinc-300 bg-white text-transparent dark:border-zinc-600 dark:bg-zinc-950"
@@ -290,21 +280,28 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
                         <button
                           type="button"
                           onClick={() => openEditModal(task)}
-                          className="flex min-w-0 flex-1 items-center gap-2 text-start"
+                          className="flex min-w-0 flex-1 flex-col gap-1 text-start sm:flex-row sm:items-center sm:gap-2"
                         >
-                          <span
-                            className={`h-2 w-2 shrink-0 rounded-full ${priorityMeta.dot}`}
-                            aria-hidden
-                          />
-                          <span
-                            className={`truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100 ${
-                              task.is_completed
-                                ? "text-zinc-400 line-through"
-                                : ""
-                            }`}
-                          >
-                            {task.task_name}
+                          <span className="flex min-w-0 items-start gap-2 sm:items-center">
+                            <span
+                              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full sm:mt-0 ${priorityMeta.dot}`}
+                              aria-hidden
+                            />
+                            <span
+                              className={`text-sm font-semibold leading-6 text-zinc-900 sm:truncate dark:text-zinc-100 ${
+                                task.is_completed
+                                  ? "text-zinc-400 line-through"
+                                  : ""
+                              }`}
+                            >
+                              {task.task_name}
+                            </span>
                           </span>
+                          {prayerLabel ? (
+                            <span className="inline-flex w-fit shrink-0 rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600 sm:hidden dark:bg-zinc-900 dark:text-zinc-400">
+                              {prayerLabel}
+                            </span>
+                          ) : null}
                         </button>
 
                         {prayerLabel ? (
@@ -322,7 +319,7 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
                           onClick={() => handleDeleteTask(task.id)}
                           disabled={pendingDeleteId === task.id}
                           aria-label="مسح الثغرة"
-                          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-zinc-400 opacity-70 transition hover:bg-zinc-100 hover:text-red-500 group-hover:opacity-100 disabled:opacity-50 dark:hover:bg-zinc-900 dark:hover:text-red-400"
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-zinc-400 opacity-100 transition hover:bg-zinc-100 hover:text-red-500 disabled:opacity-50 sm:h-8 sm:w-8 sm:opacity-70 sm:group-hover:opacity-100 dark:hover:bg-zinc-900 dark:hover:text-red-400"
                         >
                           {pendingDeleteId === task.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />

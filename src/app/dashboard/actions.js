@@ -6,14 +6,103 @@ import {
   markUserCampTaskComplete,
   revalidateCampForTask,
 } from "@/app/dashboard/camps/actions";
+import { getLocalTodayDate } from "@/app/dashboard/prayer-time";
 
 const PRAYER_ANCHORS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 const TASK_FIELDS =
-  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, created_at, source_camp_task_id, goals:goals(title), camp_source:camp_tasks!source_camp_task_id(title, camps(title))";
+  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, scheduled_time, created_at, source_camp_task_id, goals:goals(title), camp_source:camp_tasks!source_camp_task_id(title, camps(title))";
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return getLocalTodayDate();
+}
+
+function parseScheduledTime(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
+}
+
+function isValidTaskDate(taskDate) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(taskDate);
+}
+
+function isFixedHabitTask(task, fixedHabits) {
+  return (fixedHabits || []).some(
+    (habit) =>
+      habit.habit_name === task.task_name &&
+      habit.prayer_anchor === task.prayer_anchor,
+  );
+}
+
+function sortTasksBySchedule(tasks) {
+  return [...tasks].sort((a, b) => {
+    const aTime = a.scheduled_time || "";
+    const bTime = b.scheduled_time || "";
+
+    if (aTime && bTime && aTime !== bTime) {
+      return aTime.localeCompare(bTime);
+    }
+
+    if (aTime && !bTime) return -1;
+    if (!aTime && bTime) return 1;
+
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+}
+
+async function fetchUserFixedHabits(supabase, userId) {
+  const { data } = await supabase
+    .from("fixed_habits")
+    .select("id, user_id, habit_name, prayer_anchor, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  return data || [];
+}
+
+async function mutateFixedHabitForTask(
+  supabase,
+  userId,
+  { wasFixed, willBeFixed, previousName, nextName, nextAnchor },
+) {
+  if (wasFixed && previousName && (previousName !== nextName || !willBeFixed)) {
+    const { error } = await supabase
+      .from("fixed_habits")
+      .delete()
+      .eq("user_id", userId)
+      .eq("habit_name", previousName);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  if (willBeFixed) {
+    const { error } = await supabase.from("fixed_habits").upsert(
+      {
+        user_id: userId,
+        habit_name: nextName,
+        prayer_anchor: nextAnchor,
+      },
+      { onConflict: "user_id,habit_name" },
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
 }
 
 async function getAuthenticatedUser() {
@@ -28,14 +117,6 @@ async function getAuthenticatedUser() {
   }
 
   return { supabase, user, error: null };
-}
-
-function isFixedHabitTask(task, fixedHabits) {
-  return fixedHabits.some(
-    (habit) =>
-      habit.habit_name === task.task_name &&
-      habit.prayer_anchor === task.prayer_anchor,
-  );
 }
 
 async function syncFixedHabitsToToday(
@@ -83,6 +164,22 @@ async function syncFixedHabitsToToday(
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
 }
+
+function sortSyncedTodayTasks(tasks) {
+  const grouped = new Map();
+
+  for (const task of tasks) {
+    const anchor = task.prayer_anchor || "dhuhr";
+    if (!grouped.has(anchor)) {
+      grouped.set(anchor, []);
+    }
+    grouped.get(anchor).push(task);
+  }
+
+  return PRAYER_ANCHORS.flatMap((anchor) =>
+    sortTasksBySchedule(grouped.get(anchor) || []),
+  );
+}
 export async function deleteTask(taskId) {
   const cleanTaskId = String(taskId || "").trim();
 
@@ -96,6 +193,20 @@ export async function deleteTask(taskId) {
     return { error: authError };
   }
 
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("id, task_name, prayer_anchor")
+    .eq("id", cleanTaskId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!task) {
+    return { error: "المهمة غير موجودة." };
+  }
+
+  const fixedHabits = await fetchUserFixedHabits(supabase, user.id);
+  const wasFixed = isFixedHabitTask(task, fixedHabits);
+
   const { error } = await supabase
     .from("tasks")
     .delete()
@@ -106,8 +217,165 @@ export async function deleteTask(taskId) {
     return { error: "تعذر حذف المهمة." };
   }
 
+  if (wasFixed) {
+    try {
+      await mutateFixedHabitForTask(supabase, user.id, {
+        wasFixed: true,
+        willBeFixed: false,
+        previousName: task.task_name,
+        nextName: task.task_name,
+        nextAnchor: task.prayer_anchor,
+      });
+    } catch (habitError) {
+      console.error("deleteTask fixed habit:", habitError);
+    }
+  }
+
   revalidatePath("/dashboard");
-  return { success: true, taskId: cleanTaskId };
+  return {
+    success: true,
+    taskId: cleanTaskId,
+    fixedHabits: await fetchUserFixedHabits(supabase, user.id),
+  };
+}
+
+export async function updateTask(
+  taskId,
+  taskName,
+  prayerAnchor,
+  taskDate = null,
+  scheduledTime = null,
+  isFixedHabit = false,
+) {
+  const cleanTaskId = String(taskId || "").trim();
+  const cleanTaskName = String(taskName || "").trim();
+  const cleanPrayerAnchor = String(prayerAnchor || "").trim();
+  const cleanTaskDate = String(taskDate || getTodayDate()).trim();
+  const cleanScheduledTime = parseScheduledTime(scheduledTime);
+  const willBeFixed = Boolean(isFixedHabit);
+
+  if (!cleanTaskId) {
+    return { error: "لم يتم تحديد المهمة." };
+  }
+
+  if (!cleanTaskName) {
+    return { error: "اكتب اسم المهمة أولاً." };
+  }
+
+  if (!PRAYER_ANCHORS.includes(cleanPrayerAnchor)) {
+    return { error: "اختر وقتاً صحيحاً للمهمة." };
+  }
+
+  if (!isValidTaskDate(cleanTaskDate)) {
+    return { error: "تاريخ المهمة غير صالح." };
+  }
+
+  if (cleanTaskDate < getTodayDate()) {
+    return { error: "لا يمكن نقل المهمة إلى يوم ماضٍ." };
+  }
+
+  if (scheduledTime && !cleanScheduledTime) {
+    return { error: "الوقت التذكيري غير صالح." };
+  }
+
+  const { supabase, user, error: authError } = await getAuthenticatedUser();
+
+  if (authError) {
+    return { error: authError };
+  }
+
+  const { data: existingTask, error: existingError } = await supabase
+    .from("tasks")
+    .select(TASK_FIELDS)
+    .eq("id", cleanTaskId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existingError || !existingTask) {
+    return { error: "المهمة غير موجودة." };
+  }
+
+  const fixedHabits = await fetchUserFixedHabits(supabase, user.id);
+  const wasFixed = isFixedHabitTask(existingTask, fixedHabits);
+
+  if (cleanTaskDate !== existingTask.task_date && !willBeFixed) {
+    const { data: dateTasks, error: tasksError } = await supabase
+      .from("tasks")
+      .select("id, task_name, prayer_anchor, source_camp_task_id")
+      .eq("user_id", user.id)
+      .eq("task_date", cleanTaskDate);
+
+    if (tasksError) {
+      return { error: "تعذر التحقق من عدد مهام اليوم المستهدف." };
+    }
+
+    const customTaskCount = (dateTasks || []).filter(
+      (task) =>
+        task.id !== cleanTaskId &&
+        !task.source_camp_task_id &&
+        !isFixedHabitTask(task, fixedHabits),
+    ).length;
+
+    if (customTaskCount >= 3) {
+      return {
+        error:
+          cleanTaskDate === getTodayDate()
+            ? "وصلت إلى ثلاث مهام دنيوية لليوم. ركز على ثغورك الثلاثة الأساسية."
+            : "وصلت إلى ثلاث مهام مجدولة في هذا اليوم.",
+      };
+    }
+  }
+
+  try {
+    await mutateFixedHabitForTask(supabase, user.id, {
+      wasFixed,
+      willBeFixed,
+      previousName: existingTask.task_name,
+      nextName: cleanTaskName,
+      nextAnchor: cleanPrayerAnchor,
+    });
+  } catch (habitError) {
+    return { error: "تعذر تحديث الورد الراتب." };
+  }
+
+  const scheduleChanged =
+    cleanTaskDate !== existingTask.task_date ||
+    cleanScheduledTime !== (existingTask.scheduled_time || null);
+
+  const updatePayload = {
+    task_name: cleanTaskName,
+    prayer_anchor: cleanPrayerAnchor,
+    task_date: cleanTaskDate,
+    scheduled_time: cleanScheduledTime,
+  };
+
+  if (scheduleChanged) {
+    updatePayload.reminder_sent_at = null;
+  }
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update(updatePayload)
+    .eq("id", cleanTaskId)
+    .eq("user_id", user.id)
+    .select(TASK_FIELDS)
+    .single();
+
+  if (error) {
+    return { error: "تعذر تحديث المهمة." };
+  }
+
+  const today = getTodayDate();
+  revalidatePath("/dashboard");
+
+  return {
+    task: data,
+    wasToday: existingTask.task_date === today,
+    isToday: data.task_date === today,
+    wasScheduled: existingTask.task_date > today,
+    isScheduled: data.task_date > today,
+    fixedHabits: await fetchUserFixedHabits(supabase, user.id),
+  };
 }
 
 export async function getFixedHabits() {
@@ -231,11 +499,13 @@ export async function getTasksForToday() {
     };
   }
 
-  const syncedTasks = await syncFixedHabitsToToday(
-    supabase,
-    user.id,
-    fixedHabits || [],
-    todayTasks || [],
+  const syncedTasks = sortSyncedTodayTasks(
+    await syncFixedHabitsToToday(
+      supabase,
+      user.id,
+      fixedHabits || [],
+      todayTasks || [],
+    ),
   );
 
   return {
@@ -244,9 +514,62 @@ export async function getTasksForToday() {
   };
 }
 
-export async function addTask(taskName, prayerAnchor) {
+export async function getTodayCustomTasksCount() {
+  const result = await getTasksForToday();
+
+  if (result.error) {
+    return { error: result.error, customTasksCount: 0 };
+  }
+
+  const customTasksCount = (result.tasks || []).filter(
+    (task) => !isFixedHabitTask(task, result.fixedHabits || []),
+  ).length;
+
+  return { customTasksCount };
+}
+
+export async function getUpcomingTasks() {
+  const { supabase, user, error: authError } = await getAuthenticatedUser();
+
+  if (authError) {
+    return { error: authError, tasks: [] };
+  }
+
+  const today = getTodayDate();
+  const horizonDate = new Date();
+  horizonDate.setDate(horizonDate.getDate() + 60);
+  const horizon = getLocalTodayDate(horizonDate);
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(TASK_FIELDS)
+    .eq("user_id", user.id)
+    .gt("task_date", today)
+    .lte("task_date", horizon)
+    .order("task_date", { ascending: true })
+    .order("scheduled_time", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
+    .limit(30);
+
+  if (error) {
+    return { error: "تعذر تحميل المهام القادمة.", tasks: [] };
+  }
+
+  return { tasks: data ?? [], error: null };
+}
+
+export async function addTask(
+  taskName,
+  prayerAnchor,
+  taskDate = null,
+  scheduledTime = null,
+  isFixedHabit = false,
+) {
   const cleanTaskName = String(taskName || "").trim();
   const cleanPrayerAnchor = String(prayerAnchor || "").trim();
+  const cleanTaskDate = String(taskDate || getTodayDate()).trim();
+  const cleanScheduledTime = parseScheduledTime(scheduledTime);
+  const isFixed = Boolean(isFixedHabit);
 
   if (!cleanTaskName) {
     return { error: "اكتب اسم المهمة أولاً." };
@@ -256,13 +579,25 @@ export async function addTask(taskName, prayerAnchor) {
     return { error: "اختر وقتاً صحيحاً للمهمة." };
   }
 
+  if (!isValidTaskDate(cleanTaskDate)) {
+    return { error: "تاريخ المهمة غير صالح." };
+  }
+
+  if (cleanTaskDate < getTodayDate()) {
+    return { error: "لا يمكن جدولة مهمة في يوم ماضٍ." };
+  }
+
+  if (scheduledTime && !cleanScheduledTime) {
+    return { error: "الوقت التذكيري غير صالح." };
+  }
+
   const { supabase, user, error: authError } = await getAuthenticatedUser();
 
   if (authError) {
     return { error: authError };
   }
 
-  const [{ data: fixedHabits }, { data: todayTasks, error: tasksError }] =
+  const [{ data: fixedHabits }, { data: dateTasks, error: tasksError }] =
     await Promise.all([
       supabase
         .from("fixed_habits")
@@ -272,21 +607,23 @@ export async function addTask(taskName, prayerAnchor) {
         .from("tasks")
         .select(TASK_FIELDS)
         .eq("user_id", user.id)
-        .eq("task_date", getTodayDate()),
+        .eq("task_date", cleanTaskDate),
     ]);
 
   if (tasksError) {
     return { error: "تعذر التحقق من عدد مهام اليوم." };
   }
 
-  const customTaskCount = (todayTasks || []).filter(
+  const customTaskCount = (dateTasks || []).filter(
     (task) => !isFixedHabitTask(task, fixedHabits || []),
   ).length;
 
-  if (customTaskCount >= 3) {
+  if (!isFixed && customTaskCount >= 3) {
     return {
       error:
-        "وصلت إلى ثلاث مهام دنيوية لليوم. ركز على ثغورك الثلاثة الأساسية لضمان أعلى مستويات التركيز.",
+        cleanTaskDate === getTodayDate()
+          ? "وصلت إلى ثلاث مهام دنيوية لليوم. ركز على ثغورك الثلاثة الأساسية لضمان أعلى مستويات التركيز."
+          : "وصلت إلى ثلاث مهام مجدولة في هذا اليوم. ركز على ثغورك الثلاثة الأساسية.",
     };
   }
 
@@ -296,7 +633,8 @@ export async function addTask(taskName, prayerAnchor) {
       user_id: user.id,
       task_name: cleanTaskName,
       prayer_anchor: cleanPrayerAnchor,
-      task_date: getTodayDate(),
+      task_date: cleanTaskDate,
+      scheduled_time: cleanScheduledTime,
     })
     .select(TASK_FIELDS)
     .single();
@@ -305,8 +643,27 @@ export async function addTask(taskName, prayerAnchor) {
     return { error: "تعذر إضافة المهمة الآن." };
   }
 
+  if (isFixed) {
+    try {
+      await mutateFixedHabitForTask(supabase, user.id, {
+        wasFixed: false,
+        willBeFixed: true,
+        previousName: null,
+        nextName: cleanTaskName,
+        nextAnchor: cleanPrayerAnchor,
+      });
+    } catch (habitError) {
+      await supabase.from("tasks").delete().eq("id", data.id);
+      return { error: "تعذر حفظ الورد الراتب." };
+    }
+  }
+
   revalidatePath("/dashboard");
-  return { task: data };
+  return {
+    task: data,
+    isScheduled: cleanTaskDate > getTodayDate(),
+    fixedHabits: await fetchUserFixedHabits(supabase, user.id),
+  };
 }
 
 export async function completeFocusTask(taskId, durationMinutes) {

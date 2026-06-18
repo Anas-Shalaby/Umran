@@ -51,9 +51,12 @@ const stepVariants = {
   exit: { opacity: 0, x: -24 },
 };
 
-export function OnboardingWizard() {
-  const [step, setStep] = useState(1);
-  const [ultimatePurpose, setUltimatePurpose] = useState(DEFAULT_PURPOSE);
+export function OnboardingWizard({ savedPurpose = "" }) {
+  const hasSavedPurpose = Boolean(String(savedPurpose || "").trim());
+  const [step, setStep] = useState(hasSavedPurpose ? 2 : 1);
+  const [ultimatePurpose, setUltimatePurpose] = useState(
+    savedPurpose || DEFAULT_PURPOSE,
+  );
   const [habits, setHabits] = useState(buildInitialHabits);
   const [tasks, setTasks] = useState(["", "", ""]);
   const [isPending, startTransition] = useTransition();
@@ -154,7 +157,7 @@ export function OnboardingWizard() {
                 <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
                   الخطوة ١ من ٤
                 </p>
-                <h1 className="mt-2 text-2xl font-black leading-10 text-zinc-950 dark:text-zinc-50">
+                <h1 className="mt-2 text-xl font-black leading-8 text-zinc-950 sm:text-2xl sm:leading-10 dark:text-zinc-50">
                   قبل أن نهندس يومك.. ما هي غايتك الكبرى من هذا السعي؟
                 </h1>
                 <p className="mt-2 text-sm font-medium leading-7 text-zinc-500 dark:text-zinc-400">

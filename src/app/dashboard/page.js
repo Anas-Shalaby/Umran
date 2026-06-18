@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getTasksForToday } from "./actions";
+import { getTasksForToday, getUpcomingTasks } from "./actions";
 import { DashboardShell } from "./dashboard-shell";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,10 @@ export default async function DashboardPage() {
     redirect("/dashboard/onboarding");
   }
 
-  const tasksResult = await getTasksForToday();
+  const [tasksResult, upcomingResult] = await Promise.all([
+    getTasksForToday(),
+    getUpcomingTasks(),
+  ]);
   const userDisplayName =
     profile?.display_name ||
     user.user_metadata?.display_name ||
@@ -46,7 +49,8 @@ export default async function DashboardPage() {
       ultimatePurpose={ultimatePurpose}
       initialTasks={tasksResult.tasks || []}
       initialFixedHabits={tasksResult.fixedHabits || []}
-      tasksError={tasksResult.error}
+      initialUpcomingTasks={upcomingResult.tasks || []}
+      tasksError={tasksResult.error || upcomingResult.error}
     />
   );
 }

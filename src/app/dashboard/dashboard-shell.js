@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CalendarDays } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { UltimatePurposeBanner } from "@/components/dashboard/ultimate-purpose-banner";
 import { LoadingLink } from "@/components/loading-link";
 import { TodayTasksBoard } from "./today-tasks-board";
 
@@ -15,9 +16,18 @@ export function DashboardShell({
   ultimatePurpose,
   initialTasks,
   initialFixedHabits,
+  initialUpcomingTasks = [],
   tasksError,
 }) {
   const [isFocusActive, setIsFocusActive] = useState(false);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("umran:hyper-focus-change", {
+        detail: { active: isFocusActive },
+      }),
+    );
+  }, [isFocusActive]);
 
   return (
     <main
@@ -30,25 +40,14 @@ export function DashboardShell({
           transition={fadeTransition}
           className={`w-full shrink-0 lg:w-72 ${isFocusActive ? "pointer-events-none" : ""}`}
         >
-          <DashboardSidebar activeHref="/dashboard" userName={userDisplayName} />
+          <DashboardSidebar
+            activeHref="/dashboard"
+            userName={userDisplayName}
+          />
         </motion.div>
 
         <section className="relative min-h-0 w-full min-w-0 flex-1 rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-[2rem] sm:p-6 lg:min-h-[calc(100vh-3rem)] lg:p-10">
-          {ultimatePurpose ? (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="mb-4 border-b border-zinc-100 pb-3 text-center sm:mb-6 sm:pb-4 dark:border-zinc-800"
-            >
-              <p className="text-[11px] font-semibold tracking-wide text-zinc-400 dark:text-zinc-500">
-                غايتك الكبرى
-              </p>
-              <p className="mt-1 text-sm font-medium leading-8 text-zinc-600 dark:text-zinc-300">
-                {ultimatePurpose}
-              </p>
-            </motion.div>
-          ) : null}
+          <UltimatePurposeBanner purpose={ultimatePurpose} />
 
           <motion.div
             animate={{ opacity: isFocusActive ? 0 : 1 }}
@@ -70,13 +69,6 @@ export function DashboardShell({
                 أهم ما عليك دون ازدحام.
               </p>
             </div>
-
-            <LoadingLink
-              href="/profile/setup"
-              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 md:w-auto dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-50 dark:focus-visible:ring-offset-zinc-950"
-            >
-              إعداد البروفايل
-            </LoadingLink>
           </motion.div>
 
           <div className="py-4 sm:py-8">
@@ -88,6 +80,7 @@ export function DashboardShell({
               <TodayTasksBoard
                 initialTasks={initialTasks}
                 initialFixedHabits={initialFixedHabits}
+                initialUpcomingTasks={initialUpcomingTasks}
                 isFocusActive={isFocusActive}
                 onFocusActiveChange={setIsFocusActive}
               />

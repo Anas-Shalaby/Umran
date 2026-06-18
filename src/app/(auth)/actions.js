@@ -196,6 +196,6 @@ export async function updateProfile(formData) {
   return {
     success: true,
     message: "تم حفظ بياناتك بنجاح.",
-    next: "/dashboard/onboarding",
+    next: "/onboarding",
   };
 }
