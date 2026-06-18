@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
@@ -100,22 +100,39 @@ export function TodayTasksBoard({
   const [upcomingTasks, setUpcomingTasks] = useState(initialUpcomingTasks);
   const [scheduleDate, setScheduleDate] = useState(() => getLocalTodayDate());
   const [isFixedHabit, setIsFixedHabit] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => getCurrentPrayerAnchor());
+  const [selectedPrayer, setSelectedPrayer] = useState("all");
   const [pendingTaskId, setPendingTaskId] = useState("");
   const [editingTask, setEditingTask] = useState(null);
   const [showSpiritualBanner, setShowSpiritualBanner] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const sectionRefs = useRef({});
 
-  const activeTasks = useMemo(() => {
-    return tasks.filter((task) => task.prayer_anchor === activeTab);
-  }, [tasks, activeTab]);
+  const currentAnchor = useMemo(() => getCurrentPrayerAnchor(), []);
+
+  const tasksByPrayer = useMemo(() => {
+    return prayerBlocks.reduce((groups, block) => {
+      groups[block.key] = tasks.filter(
+        (task) => task.prayer_anchor === block.key,
+      );
+      return groups;
+    }, {});
+  }, [tasks]);
+
+  const todayStats = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((task) => task.is_completed).length;
+
+    return {
+      total,
+      completed,
+      percent: total ? Math.round((completed / total) * 100) : 0,
+    };
+  }, [tasks]);
 
   const customTasksCount = useMemo(() => {
     return tasks.filter((task) => !isFixedHabitTask(task, fixedHabits)).length;
   }, [tasks, fixedHabits]);
 
-  const currentBlock = prayerBlocks.find((block) => block.key === activeTab);
-  const Icon = currentBlock?.icon;
   const todayDate = getLocalTodayDate();
   const isSchedulingToday = scheduleDate === todayDate;
   const isAtTodayLimit =
@@ -171,7 +188,7 @@ export function TodayTasksBoard({
     }
 
     setTasks((currentTasks) => [...currentTasks, result.task]);
-    setActiveTab(result.task.prayer_anchor);
+    scrollToPrayer(result.task.prayer_anchor);
     if (!silent) {
       toast.success("تمت إضافة المهمة.", {
         position: "top-right",
@@ -216,7 +233,7 @@ export function TodayTasksBoard({
     startTransition(async () => {
       const result = await addTask(
         taskName,
-        activeTab,
+        selectedPrayer,
         taskDate,
         scheduledTime || null,
         makeFixedHabit,
@@ -356,58 +373,206 @@ export function TodayTasksBoard({
     );
   }
 
+  function scrollToPrayer(prayerKey) {
+    setSelectedPrayer(prayerKey);
+    sectionRefs.current[prayerKey]?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   return (
     <div
-      className="relative mx-auto w-full min-w-0 space-y-4 sm:space-y-6"
+      className="relative mx-auto w-full min-w-0 space-y-3 sm:space-y-4"
       dir="rtl"
     >
       <motion.div
         animate={{ opacity: isFocusActive ? 0 : 1 }}
         transition={fadeTransition}
-        className={isFocusActive ? "pointer-events-none" : ""}
+        className={`space-y-3 sm:space-y-4 ${isFocusActive ? "pointer-events-none" : ""}`}
       >
-        <AnimatePresence initial={false}>
-          {showSpiritualBanner ? (
-            <motion.div
-              key="spiritual-banner"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="relative me-1 mt-1"
-            >
-              <button
-                type="button"
-                onClick={handleDismissSpiritualBanner}
-                className="absolute -end-2 -top-2 z-20 grid h-6 w-6 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-500 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-                aria-label="إغلاق قسم الزاد الروحي"
-              >
-                <X className="h-3 w-3" />
-              </button>
-
-              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
-                      الزاد الروحي
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                      {fixedHabits.length
-                        ? `${fixedHabits.length} عادة راتبة مفعّلة`
-                        : "لم تُفعّل أورادك الراتبة بعد"}
-                    </p>
-                  </div>
-                  <div className="shrink-0 self-start">
-                    <FixedHabitsSettings
-                      fixedHabits={fixedHabits}
-                      onSaved={handleBoardRefresh}
-                    />
-                  </div>
+        <section className="flex min-h-[min(72vh,calc(100dvh-10rem))] flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-surface-elevated shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200/80 px-3 py-2.5 dark:border-zinc-800 sm:px-4">
+            <div>
+              <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">
+                كل مهام اليوم
+              </p>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                {todayStats.total
+                  ? `${todayStats.completed} من ${todayStats.total} منجزة`
+                  : "لا مهام بعد"}
+              </p>
+            </div>
+            {todayStats.total ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                  {todayStats.percent}%
+                </span>
+                <div className="h-2 w-20 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${todayStats.percent}%` }}
+                  />
                 </div>
               </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+            ) : null}
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+            <aside className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200/80 bg-surface-muted p-2 [scrollbar-width:none] sm:w-32 sm:flex-col sm:overflow-visible sm:border-b-0 sm:border-s sm:p-2 dark:border-zinc-800 dark:bg-zinc-950/40 lg:w-36 [&::-webkit-scrollbar]:hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPrayer("all");
+                  sectionRefs.current.all?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }}
+                className={`shrink-0 rounded-lg border px-2.5 py-2 text-[11px] font-bold transition sm:text-xs ${
+                  selectedPrayer === "all"
+                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                    : "border-transparent bg-white text-zinc-600 hover:border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400"
+                }`}
+              >
+                الكل ({tasks.length})
+              </button>
+              {prayerBlocks.map((block) => {
+                const blockTasks = tasksByPrayer[block.key] || [];
+                const pendingCount = blockTasks.filter(
+                  (task) => !task.is_completed,
+                ).length;
+                const BlockIcon = block.icon;
+                const isSelected = block.key === selectedPrayer;
+                const isCurrent = block.key === currentAnchor;
+
+                return (
+                  <button
+                    key={block.key}
+                    type="button"
+                    onClick={() => scrollToPrayer(block.key)}
+                    className={`relative flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-center transition sm:min-w-0 sm:flex-row sm:items-center sm:gap-1.5 sm:px-2 sm:py-1.5 sm:text-start ${
+                      isSelected
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                        : isCurrent
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                          : "border-transparent bg-white text-zinc-600 hover:border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400"
+                    }`}
+                  >
+                    <BlockIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-[10px] font-bold sm:text-[11px]">
+                      {block.shortTitle}
+                    </span>
+                    {blockTasks.length ? (
+                      <span
+                        className={`rounded-full px-1.5 w-5 h-5 flex items-center justify-center text-[9px] font-bold sm:ms-auto ${
+                          isSelected
+                            ? "bg-white/20 text-inherit"
+                            : pendingCount
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300"
+                              : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+                        }`}
+                      >
+                        {pendingCount || "✓"}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </aside>
+
+            <div
+              ref={(element) => {
+                sectionRefs.current.all = element;
+              }}
+              className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-2 sm:p-3"
+            >
+              {!tasks.length ? (
+                <div className="flex min-h-[12rem] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-8 text-center dark:border-zinc-800 dark:bg-zinc-900/30">
+                  <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+                    لا مهام اليوم بعد
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    أضف مهمة من زر الإضافة
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  {prayerBlocks.map((block) => {
+                    const blockTasks = tasksByPrayer[block.key] || [];
+                    const isCurrent = block.key === currentAnchor;
+                    const isHighlighted = selectedPrayer === block.key;
+                    const BlockIcon = block.icon;
+
+                    if (!blockTasks.length) {
+                      return null;
+                    }
+
+                    return (
+                      <section
+                        key={block.key}
+                        id={`prayer-${block.key}`}
+                        ref={(element) => {
+                          sectionRefs.current[block.key] = element;
+                        }}
+                        className={`scroll-mt-2 rounded-xl border bg-white p-2 dark:bg-zinc-900 ${
+                          isHighlighted
+                            ? "border-zinc-400 ring-1 ring-zinc-300 dark:border-zinc-500 dark:ring-zinc-600"
+                            : isCurrent
+                              ? "border-emerald-200 dark:border-emerald-800"
+                              : "border-zinc-200 dark:border-zinc-800"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                            <BlockIcon className="h-3.5 w-3.5" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-xs font-black text-zinc-900 dark:text-zinc-100">
+                              {block.title}
+                            </h3>
+                            {isCurrent ? (
+                              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                الوقت الحالي
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="text-[10px] font-bold text-zinc-400">
+                            {blockTasks.filter((t) => t.is_completed).length}/
+                            {blockTasks.length}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {blockTasks.map((task) => (
+                            <TaskItem
+                              key={task.id}
+                              task={task}
+                              isFixed={isFixedHabitTask(task, fixedHabits)}
+                              pending={pendingTaskId === task.id}
+                              onToggleTask={handleToggleTask}
+                              onEditTask={setEditingTask}
+                              onDeleteTask={handleDeleteTask}
+                              compact
+                              dense
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <UpcomingTasksSection
+          tasks={upcomingTasks}
+          onTasksChange={setUpcomingTasks}
+          onEditTask={setEditingTask}
+          onFixedHabitsChange={setFixedHabits}
+          defaultCollapsed
+        />
       </motion.div>
 
       <HyperFocusBanner
@@ -421,100 +586,48 @@ export function TodayTasksBoard({
       <motion.div
         animate={{ opacity: isFocusActive ? 0 : 1 }}
         transition={fadeTransition}
-        className={`space-y-6 ${isFocusActive ? "pointer-events-none" : ""}`}
+        className={isFocusActive ? "pointer-events-none" : ""}
       >
-        <div className="-mx-0.5 flex gap-1 overflow-x-auto rounded-xl border border-zinc-100 bg-white p-1 [scrollbar-width:none] dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-          {prayerBlocks.map((block) => {
-            const isSelected = activeTab === block.key;
-            const BlockIcon = block.icon;
-
-            return (
-              <button
-                key={block.key}
-                type="button"
-                onClick={() => setActiveTab(block.key)}
-                className={`relative min-w-[4.25rem] shrink-0 rounded-lg px-2 py-2 text-center transition-all sm:min-w-0 sm:flex-1 sm:px-1 ${
-                  isSelected
-                    ? "text-zinc-950 dark:text-zinc-50"
-                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-                }`}
-              >
-                {isSelected ? (
-                  <motion.div
-                    layoutId="activePrayerTab"
-                    className="absolute inset-0 rounded-lg border border-zinc-200/40 bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                ) : null}
-                <span className="relative z-10 flex flex-col items-center gap-1">
-                  <BlockIcon className="h-3.5 w-3.5 sm:hidden" />
-                  <span className="text-[11px] font-bold leading-none sm:text-xs">
-                    <span className="sm:hidden">{block.shortTitle}</span>
-                    <span className="hidden sm:inline">
-                      {block.title.split(" ")[1] || block.title}
-                    </span>
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <UpcomingTasksSection
-          tasks={upcomingTasks}
-          onTasksChange={setUpcomingTasks}
-          onEditTask={setEditingTask}
-          onFixedHabitsChange={setFixedHabits}
-        />
-
-        <div className="min-h-[320px] overflow-hidden sm:min-h-[380px]">
-          <AnimatePresence mode="wait">
-            <motion.article
-              key={activeTab}
-              initial={{ opacity: 0, x: 15 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -15 }}
+        <AnimatePresence initial={false}>
+          {showSpiritualBanner ? (
+            <motion.div
+              key="spiritual-banner"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="flex min-h-[320px] flex-col justify-between rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm sm:min-h-[380px] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900/50"
+              className="relative"
             >
-              <div>
-                <div className="mb-4 flex items-start justify-between gap-3 border-b border-zinc-50 pb-3 sm:mb-6 sm:gap-4 sm:pb-4 dark:border-zinc-800">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-black text-zinc-900 sm:text-xl dark:text-zinc-50">
-                      {currentBlock?.title}
-                    </h2>
-                    <p className="mt-1 text-[11px] font-medium leading-relaxed text-zinc-400 sm:mt-1.5">
-                      {currentBlock?.description}
-                    </p>
-                  </div>
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-zinc-100/50 bg-zinc-50 text-zinc-700 sm:h-10 sm:w-10 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                    {Icon ? <Icon className="h-5 w-5" /> : null}
-                  </div>
-                </div>
+              <button
+                type="button"
+                onClick={handleDismissSpiritualBanner}
+                className="absolute -end-2 -top-2 z-20 grid h-6 w-6 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-500 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                aria-label="إغلاق قسم الزاد الروحي"
+              >
+                <X className="h-3 w-3" />
+              </button>
 
-                <div className="custom-scrollbar max-h-[min(220px,40vh)] space-y-2 overflow-y-auto pe-0.5 sm:max-h-[220px]">
-                  {activeTasks.length ? (
-                    activeTasks.map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        isFixed={isFixedHabitTask(task, fixedHabits)}
-                        pending={pendingTaskId === task.id}
-                        onToggleTask={handleToggleTask}
-                        onEditTask={setEditingTask}
-                        onDeleteTask={handleDeleteTask}
-                      />
-                    ))
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-zinc-100 bg-zinc-50/30 py-8 text-center text-xs font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/30">
-                      لا توجد مهام مجدولة لهذا الوقت.
-                    </div>
-                  )}
+              <div className="flex flex-col gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/60 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-900/50">
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                    الزاد الروحي
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                    {fixedHabits.length
+                      ? `${fixedHabits.length} عادة راتبة مفعّلة`
+                      : "لم تُفعّل أورادك الراتبة بعد"}
+                  </p>
+                </div>
+                <div className="shrink-0 self-start">
+                  <FixedHabitsSettings
+                    fixedHabits={fixedHabits}
+                    onSaved={handleBoardRefresh}
+                  />
                 </div>
               </div>
-            </motion.article>
-          </AnimatePresence>
-        </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </motion.div>
 
       <EditTaskModal
@@ -535,6 +648,8 @@ function TaskItem({
   onToggleTask,
   onEditTask,
   onDeleteTask,
+  compact = false,
+  dense = false,
 }) {
   const goalTitle = task?.goals?.title || "";
   const campTitle = task?.camp_source?.camps?.title || "";
@@ -543,102 +658,144 @@ function TaskItem({
   return (
     <motion.div
       layout
-      className={`group flex w-full items-start gap-2 rounded-xl border p-2.5 text-start transition sm:items-center sm:gap-3 sm:p-3 ${
-        isFixed
-          ? "border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60"
-          : "border-zinc-100/60 bg-zinc-50/30 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+      className={`group flex w-full items-center gap-2 rounded-lg border text-start transition ${
+        dense
+          ? "gap-1.5 rounded-md p-1.5 shadow-none"
+          : compact
+            ? "p-2.5"
+            : "items-start p-3 sm:items-center sm:gap-3"
+      } ${
+        task.is_completed
+          ? isFixed
+            ? "border-emerald-200/80 bg-emerald-50/50 opacity-80 dark:border-emerald-900 dark:bg-emerald-950/30"
+            : dense
+              ? "border-zinc-200 bg-zinc-100/80 opacity-75 dark:border-zinc-800 dark:bg-zinc-900/60"
+              : "border-zinc-200 bg-zinc-100/70 opacity-80 dark:border-zinc-800 dark:bg-zinc-900/60"
+          : isFixed
+            ? dense
+              ? "border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100/70 dark:border-emerald-800 dark:bg-emerald-950/40"
+              : "border-emerald-200 bg-emerald-50 hover:border-emerald-300 hover:bg-emerald-100/80 dark:border-emerald-800 dark:bg-emerald-950/50 dark:hover:border-emerald-700"
+            : dense
+              ? "border-zinc-200 bg-zinc-50 hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/80 dark:hover:bg-zinc-800"
+              : "border-zinc-200 bg-white shadow-sm hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80"
       }`}
     >
       <button
         type="button"
         onClick={() => onToggleTask(task)}
         disabled={pending}
-        className="flex min-w-0 flex-1 items-start gap-2.5 text-start disabled:opacity-60 sm:items-center sm:gap-3"
+        className={`flex min-w-0 flex-1 items-center text-start disabled:opacity-60 ${
+          dense
+            ? "gap-1.5"
+            : compact
+              ? "gap-2.5"
+              : "items-start gap-2.5 sm:items-center sm:gap-3"
+        }`}
       >
         <span
-          className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded border transition ${
+          className={`grid shrink-0 place-items-center rounded border-2 transition ${
+            dense ? "h-4 w-4 rounded-[4px] border" : "h-5 w-5 rounded-md"
+          } ${
             task.is_completed
               ? isFixed
                 ? "border-emerald-700 bg-emerald-700 text-emerald-50"
-                : "border-zinc-900 bg-zinc-900 text-zinc-50"
+                : "border-zinc-800 bg-zinc-800 text-zinc-50"
               : isFixed
-                ? "border-emerald-300 bg-white text-transparent group-hover:border-emerald-700 dark:border-emerald-700 dark:bg-zinc-900"
-                : "border-zinc-300 bg-white text-transparent group-hover:border-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:group-hover:border-zinc-400"
+                ? "border-emerald-400 bg-white text-transparent group-hover:border-emerald-600 dark:border-emerald-600 dark:bg-zinc-950"
+                : "border-zinc-300 bg-white text-transparent group-hover:border-zinc-700 dark:border-zinc-500 dark:bg-zinc-950 dark:group-hover:border-zinc-300"
           }`}
         >
           {pending ? (
-            <Loader2 className="h-2.5 w-2.5 animate-spin text-zinc-500" />
+            <Loader2
+              className={`animate-spin text-zinc-500 ${dense ? "h-2.5 w-2.5" : "h-3 w-3"}`}
+            />
           ) : (
-            <Check className="h-2.5 w-2.5" />
+            <Check className={dense ? "h-2.5 w-2.5" : "h-3 w-3"} />
           )}
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-          {isFixed ? (
-            <Star className="hidden h-3.5 w-3.5 shrink-0 fill-emerald-500 text-emerald-500 sm:block" />
+        <span
+          className={`flex min-w-0 flex-1 items-center ${dense ? "gap-1" : "gap-2"}`}
+        >
+          {isFixed && !dense ? (
+            <Star className="h-4 w-4 shrink-0 fill-emerald-500 text-emerald-500" />
           ) : null}
           <span className="min-w-0 flex-1">
-            <span className="flex items-start gap-1.5 sm:items-center">
-              {isFixed ? (
-                <Star className="mt-0.5 h-3.5 w-3.5 shrink-0 fill-emerald-500 text-emerald-500 sm:hidden" />
-              ) : null}
-              <span
-                className={`block text-xs font-semibold leading-5 transition sm:truncate ${
-                  task.is_completed
-                    ? "text-zinc-400 line-through"
-                    : isFixed
-                      ? "text-emerald-900 dark:text-emerald-300"
-                      : "text-zinc-800 dark:text-zinc-200"
-                }`}
-              >
-                {task.task_name}
-              </span>
+            <span
+              className={`block truncate font-bold leading-5 transition ${
+                dense ? "text-xs" : "text-sm leading-6"
+              } ${
+                task.is_completed
+                  ? "text-zinc-400 line-through"
+                  : isFixed
+                    ? "text-emerald-900 dark:text-emerald-200"
+                    : "text-zinc-900 dark:text-zinc-100"
+              }`}
+            >
+              {task.task_name}
             </span>
-            <div className="flex flex-wrap gap-1">
-              {scheduledTimeLabel ? (
-                <span className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
-                  {scheduledTimeLabel}
-                </span>
-              ) : null}
-              {goalTitle ? (
-                <span className="inline-flex max-w-full items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:border-indigo-900/70 dark:bg-indigo-950/40 dark:text-indigo-300">
-                  الهدف: {goalTitle}
-                </span>
-              ) : null}
-              {campTitle ? (
-                <span className="inline-flex max-w-full items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
-                  معسكر: {campTitle}
-                </span>
-              ) : null}
-            </div>
+            {!compact && (scheduledTimeLabel || goalTitle || campTitle) ? (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {scheduledTimeLabel ? (
+                  <span className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-bold text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {scheduledTimeLabel}
+                  </span>
+                ) : null}
+                {goalTitle ? (
+                  <span className="inline-flex max-w-full items-center rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300">
+                    الهدف: {goalTitle}
+                  </span>
+                ) : null}
+                {campTitle ? (
+                  <span className="inline-flex max-w-full items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    معسكر: {campTitle}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </span>
+          {compact && scheduledTimeLabel ? (
+            <span
+              className={`shrink-0 rounded-full border border-zinc-200 bg-white font-bold text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 ${
+                dense ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]"
+              }`}
+            >
+              {scheduledTimeLabel}
+            </span>
+          ) : null}
         </span>
       </button>
 
-      {isFixed ? (
-        <span className="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-emerald-100 bg-white px-2 py-0.5 text-[10px] font-bold text-emerald-700 sm:self-center dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-400">
+      {isFixed && !compact && !dense ? (
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
           <Sparkles className="h-3 w-3" />
           راتب
         </span>
       ) : null}
-      <div className="flex shrink-0 items-center gap-0.5 self-start sm:self-center">
+      <div
+        className={`flex shrink-0 items-center ${dense ? "gap-0" : "gap-0.5"}`}
+      >
         <button
           type="button"
           onClick={() => onEditTask?.(task)}
           disabled={pending}
-          className="grid h-7 w-7 place-items-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          className={`grid place-items-center rounded-lg border border-transparent text-zinc-500 transition hover:border-zinc-200 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 ${
+            dense ? "h-6 w-6" : "h-8 w-8"
+          }`}
           aria-label={`تعديل ${task.task_name}`}
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <Pencil className={dense ? "h-3 w-3" : "h-3.5 w-3.5"} />
         </button>
         <button
           type="button"
           onClick={() => onDeleteTask(task)}
           disabled={pending}
-          className="grid h-7 w-7 place-items-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+          className={`grid place-items-center rounded-lg border border-transparent text-red-500 transition hover:border-red-100 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:hover:border-red-900/50 dark:hover:bg-red-950/40 dark:hover:text-red-400 ${
+            dense ? "h-6 w-6" : "h-8 w-8"
+          }`}
           aria-label={`حذف ${task.task_name}`}
         >
-          <Trash className="h-3.5 w-3.5" />
+          <Trash className={dense ? "h-3 w-3" : "h-3.5 w-3.5"} />
         </button>
       </div>
     </motion.div>

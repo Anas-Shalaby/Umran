@@ -42,7 +42,7 @@ export default function RootLayout({
       className={umranFont.variable}
       suppressHydrationWarning
     >
-      <body className="font-arabic antialiased bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      <body className="font-arabic text-base antialiased bg-surface-base text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

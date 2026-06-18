@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Play, Sparkles, Square } from "lucide-react";
 import { completeFocusTask } from "./actions";
@@ -140,35 +141,35 @@ export function HyperFocusBanner({
     <AnimatePresence mode="wait">
       <motion.section
         key={focusState + (liveTask?.id || "idle") + String(showCelebration)}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.28, ease: "easeOut" }}
-        className={`relative overflow-hidden rounded-2xl border p-5 sm:p-6 ${
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        className={`relative overflow-hidden rounded-2xl border shadow-sm ${
           focusState === "focus"
             ? isFocusActive
-              ? "border-emerald-200 bg-white text-zinc-950 shadow-2xl shadow-emerald-500/10 dark:border-emerald-500/40 dark:bg-zinc-950 dark:text-zinc-50 dark:shadow-emerald-950/20"
-              : "border-zinc-200 bg-white text-zinc-950 shadow-lg shadow-zinc-200/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:shadow-zinc-950/40"
+              ? "border-emerald-200 bg-white dark:border-emerald-500/40 dark:bg-zinc-950"
+              : "border-zinc-100 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
             : focusState === "success"
-              ? "border-emerald-100 bg-emerald-50/60 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
-              : "border-zinc-200 bg-zinc-50/80 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400"
+              ? "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/30"
+              : "border-zinc-100 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/40"
         }`}
       >
         <AnimatePresence>
           {showCelebration ? (
             <motion.div
               key="celebration"
-              initial={{ opacity: 0, scale: 0.96 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6 text-center backdrop-blur-sm dark:bg-zinc-950/95"
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-4 text-center backdrop-blur-sm sm:p-6 dark:bg-zinc-950/95"
             >
-              <p className="max-w-md text-lg font-black leading-10 text-emerald-700 sm:text-xl dark:text-emerald-400">
+              <p className="max-w-md text-sm font-black leading-8 text-emerald-700 sm:text-base sm:leading-9 dark:text-emerald-400">
                 {typeof celebrationLabel === "number" ? (
                   <>
                     أحسن الله إليك! قضيت{" "}
-                    <span className="font-[Umran] text-2xl text-emerald-600 dark:text-emerald-300">
+                    <span className="font-[Umran] text-xl text-emerald-600 sm:text-2xl dark:text-emerald-300">
                       {celebrationLabel}
                     </span>{" "}
                     دقيقة من التركيز النقي في هذا الثغر.
@@ -184,41 +185,38 @@ export function HyperFocusBanner({
           ) : null}
         </AnimatePresence>
 
-        {focusState === "focus" && liveTask ? (
-          <div
-            className={`flex flex-col gap-5 ${isFocusActive ? "sm:gap-8" : ""}`}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="p-3 sm:p-4">
+          {focusState === "focus" && liveTask ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0 flex-1">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-[11px] font-bold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-                  <span className="relative flex h-2 w-2">
-                    {isFocusActive ? (
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-70 dark:bg-emerald-400" />
-                    ) : null}
-                    <span
-                      className={`relative inline-flex h-2 w-2 rounded-full ${
-                        isFocusActive
-                          ? "bg-emerald-500 dark:bg-emerald-400"
-                          : "bg-zinc-400 dark:bg-zinc-500"
-                      }`}
-                    />
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-0.5 text-[10px] font-bold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                    <span className="relative flex h-1.5 w-1.5">
+                      {isFocusActive ? (
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-70" />
+                      ) : null}
+                      <span
+                        className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                          isFocusActive ? "bg-emerald-500" : "bg-zinc-400"
+                        }`}
+                      />
+                    </span>
+                    {isFocusActive ? "وضع الاستغراق" : "ثغرك الحالي"}
                   </span>
-                  {isFocusActive ? "وضع الاستغراق نشط" : "ثغرك الحالي الحقيقي"}
+                  <span className="text-[10px] font-bold text-zinc-400">
+                    {PRAYER_ANCHOR_LABELS[currentAnchor]}
+                  </span>
                 </div>
-
-                <p className="mb-1 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                  {PRAYER_ANCHOR_LABELS[currentAnchor]}
-                </p>
 
                 <div className="flex items-start gap-2">
                   {isFixed ? (
-                    <Sparkles className="mt-1.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                   ) : null}
                   <h2
-                    className={`font-black leading-snug text-zinc-950 dark:text-zinc-50 ${
+                    className={`min-w-0 font-black leading-snug text-zinc-950 dark:text-zinc-50 ${
                       isFocusActive
-                        ? "text-2xl sm:text-3xl"
-                        : "text-xl sm:text-2xl"
+                        ? "text-lg sm:text-xl"
+                        : "text-base sm:text-lg"
                     }`}
                   >
                     {liveTask.task_name}
@@ -226,124 +224,135 @@ export function HyperFocusBanner({
                 </div>
 
                 {!isFocusActive ? (
-                  <p className="mt-2 block text-[11px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
-                    ابدأ عداد الاستغراق المفتوح — بلا حدود زمنية صارمة، فقط أنت
-                    وثغرك حتى تنتهي.
+                  <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+                    ابدأ عداد الاستغراق — أنت وثغرك حتى تنتهي.
                   </p>
-                ) : null}
+                ) : (
+                  <p
+                    className="mt-1 font-[Umran] text-2xl tracking-wider text-emerald-600 sm:hidden dark:text-emerald-500"
+                    aria-live="polite"
+                  >
+                    {formatElapsedTime(elapsedTime)}
+                  </p>
+                )}
               </div>
 
-              {isFocusActive ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex shrink-0 items-baseline gap-3"
-                >
+              <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                {isFocusActive ? (
                   <p
-                    className="font-[Umran] text-2xl tracking-wider text-emerald-600 sm:text-3xl md:text-5xl dark:text-emerald-500"
+                    className="hidden font-[Umran] text-3xl tracking-wider text-emerald-600 sm:block dark:text-emerald-500"
                     aria-live="polite"
                     aria-label={`الوقت المنقضي ${formatElapsedTime(elapsedTime)}`}
                   >
                     {formatElapsedTime(elapsedTime)}
                   </p>
-                </motion.div>
-              ) : null}
+                ) : null}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  {!isFocusActive ? (
+                    <button
+                      type="button"
+                      onClick={handleStartFocus}
+                      disabled={isSaving || showCelebration}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-60 sm:h-9 sm:w-auto sm:text-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                    >
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      بدء الاستغراق
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleEndFocus}
+                        disabled={isSaving}
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-bold text-white transition hover:bg-red-500 disabled:opacity-60 sm:h-9 sm:w-auto sm:text-sm"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Square className="h-3.5 w-3.5 fill-current" />
+                        )}
+                        إنهاء الثغر
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelSession}
+                        disabled={isSaving}
+                        className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 sm:h-9 sm:w-auto dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        إلغاء
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
+          ) : null}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-              {!isFocusActive ? (
-                <button
-                  type="button"
-                  onClick={handleStartFocus}
-                  disabled={isSaving || showCelebration}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-900 px-4 text-sm font-semibold text-zinc-50 transition hover:border-zinc-300 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 sm:h-10 sm:w-auto dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:focus-visible:ring-offset-zinc-950"
-                >
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  بدء الاستغراق
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleEndFocus}
-                    disabled={isSaving}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-bold text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 sm:h-10 sm:w-auto dark:focus-visible:ring-offset-zinc-950"
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Square className="h-3.5 w-3.5 fill-current" />
-                    )}
-                    إنهاء الثغر وحفظ الأثر
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelSession}
-                    disabled={isSaving}
-                    className="w-full rounded-md bg-zinc-100 p-2.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 hover:text-zinc-600 disabled:opacity-40 sm:w-auto dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 dark:hover:text-zinc-400"
-                  >
-                    إلغاء الجلسة
-                  </button>
-                </>
-              )}
+          {focusState === "success" ? (
+            <div className="flex items-start gap-2.5">
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-emerald-100 bg-white text-emerald-600 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-400">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                  وضع الراحة · {PRAYER_ANCHOR_LABELS[currentAnchor]}
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-6 text-emerald-900 sm:text-sm sm:leading-7 dark:text-emerald-100">
+                  الحمد لله، تم سد ثغور هذا الوقت. خذ قسطاً من الراحة واستعد
+                  للوقت القادم.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {focusState === "success" ? (
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-              وضع الراحة
-            </p>
-            <p className="text-sm font-semibold leading-8 text-emerald-900 dark:text-emerald-100">
-              الحمد لله، تم سد ثغور هذا الوقت بنجاح. خذ قسطاً من الراحة واستعد
-              للوقت القادم.
-            </p>
-            <p className="text-xs font-medium text-emerald-700/80 dark:text-emerald-400/80">
-              {PRAYER_ANCHOR_LABELS[currentAnchor]}
-            </p>
-          </div>
-        ) : null}
-
-        {focusState === "empty" ? (
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
-              واجهة التركيز المطلق
-            </p>
-            <p className="text-sm font-medium leading-8 text-zinc-600 dark:text-zinc-300">
-              هذا الوقت خالٍ من المهام المجدولة. ارتح، أو أضف ثغراً سريعاً
-              بالأسفل.
-            </p>
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
-              {PRAYER_ANCHOR_LABELS[currentAnchor]}
-            </p>
-          </div>
-        ) : null}
+          {focusState === "empty" ? (
+            <div className="flex items-start gap-2.5">
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                <Play className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                  ثغرك الحالي · {PRAYER_ANCHOR_LABELS[currentAnchor]}
+                </p>
+                <p className="mt-1 text-xs font-medium leading-6 text-zinc-600 sm:text-sm sm:leading-7 dark:text-zinc-300">
+                  هذا الوقت خالٍ من المهام. ارتح أو أضف ثغراً من زر الإضافة.
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </motion.section>
     </AnimatePresence>
   );
 
   if (isFocusActive && focusState === "focus") {
-    return (
+    const overlay = (
       <motion.div
         layout
-        className="fixed inset-0 z-50 flex items-center justify-center bg-white/85 p-3 backdrop-blur-sm dark:bg-zinc-950/90 sm:p-8"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-zinc-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
         <motion.div
           layout
-          className="w-full max-w-3xl"
-          initial={{ scale: 0.96, y: 12 }}
+          className="w-full max-w-lg sm:max-w-2xl"
+          initial={{ scale: 0.98, y: 16 }}
           animate={{ scale: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
           {bannerContent}
         </motion.div>
       </motion.div>
     );
+
+    if (typeof document !== "undefined") {
+      return createPortal(overlay, document.body);
+    }
+
+    return overlay;
   }
 
   return bannerContent;

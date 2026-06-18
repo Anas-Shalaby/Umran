@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { maybeSendWelcomeEmailForUser } from "@/lib/email/maybe-send-welcome-email";
 import { getSiteOrigin } from "@/lib/site-origin";
 
 function getSignupErrorMessage(error) {
@@ -78,6 +79,10 @@ export async function signup(formData) {
     };
   }
 
+  if (data.session && data.user) {
+    await maybeSendWelcomeEmailForUser(data.user);
+  }
+
   return {
     success: true,
     next: data.session ? "/profile/setup" : null,
@@ -149,6 +154,14 @@ export async function login(formData) {
     return {
       error: getLoginErrorMessage(error),
     };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    await maybeSendWelcomeEmailForUser(user);
   }
 
   return {

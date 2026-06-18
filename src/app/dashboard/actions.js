@@ -2,10 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import {
-  markUserCampTaskComplete,
-  revalidateCampForTask,
-} from "@/app/dashboard/camps/actions";
+
 import { getLocalTodayDate } from "@/app/dashboard/prayer-time";
 
 const PRAYER_ANCHORS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];

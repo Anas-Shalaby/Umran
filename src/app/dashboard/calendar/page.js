@@ -31,12 +31,12 @@ export default async function CalendarPage() {
   return (
     <main
       dir="rtl"
-      className="min-h-screen bg-zinc-50/50 text-start text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
+      className="min-h-screen bg-surface-canvas text-start text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
     >
       <div className="mx-auto flex min-h-screen w-full flex-col gap-4 p-4 lg:flex-row lg:p-6">
         <DashboardSidebar activeHref="/dashboard/calendar" />
 
-        <section className="min-h-[calc(100vh-2rem)] flex-1 rounded-[2rem] border border-zinc-200/70 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:p-10">
+        <section className="min-h-[calc(100vh-2rem)] flex-1 rounded-[2rem] border border-zinc-200/80 bg-surface-elevated p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:p-10">
           <div className="mx-auto max-w-4xl">
             <div className="mb-10 text-center">
               <h1 className="text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-4xl">

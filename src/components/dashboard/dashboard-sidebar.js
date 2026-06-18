@@ -17,11 +17,11 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { startNavigation } from "@/lib/navigation-progress";
+import Image from "next/image";
 
 const navigationLinks = [
   { label: "الرئيسية", href: "/dashboard", icon: Home },
   { label: "الأهداف والخطوات", href: "/dashboard/goals", icon: Target },
-  { label: "المعسكرات المفتوحة", href: "/dashboard/camps", icon: Flame },
   { label: "دفتر الليل", href: "/dashboard/journal", icon: NotebookPen },
   { label: "تقويم الأثر", href: "/dashboard/calendar", icon: BarChart3 },
   { label: "الإعدادات", href: "/dashboard/settings", icon: Settings },
@@ -92,10 +92,16 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
 
   return (
     <>
-      <div className="sticky top-0 z-30 -mx-1 mb-1 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200/70 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/90 lg:hidden">
+      <div className="sticky top-0 z-30 -mx-1 mb-1 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-surface-elevated/95 px-3 py-2.5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/90 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-base font-black text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
-            ع
+            <Image
+              src="/icon-192.png"
+              alt="عُمران"
+              width={36}
+              height={36}
+              className="h-full w-full object-contain"
+            />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-black text-zinc-950 dark:text-zinc-50">
@@ -180,11 +186,11 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
         ) : null}
       </AnimatePresence>
 
-      <aside className="hidden rounded-[2rem] border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:block lg:min-h-[calc(100vh-3rem)] lg:w-72">
+      <aside className="hidden rounded-[2rem] border border-zinc-200/80 bg-surface-elevated p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:block lg:min-h-[calc(100vh-3rem)] lg:w-72">
         <div className="mb-6 flex items-center justify-between gap-3 px-2">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-zinc-950 text-lg font-black text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
-              ع
+            <div className="grid h-10 w-10 place-items-center rounded-2xl  text-lg font-black text-zinc-50  dark:text-zinc-950">
+              <Image src="/icon-192.png" alt="عُمران" width={36} height={36} />
             </div>
             <div>
               <p className="text-base font-black tracking-tight text-zinc-950 dark:text-zinc-50">

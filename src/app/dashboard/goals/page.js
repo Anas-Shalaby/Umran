@@ -36,7 +36,7 @@ export default async function GoalsPage() {
   return (
     <main
       dir="rtl"
-      className="min-h-screen bg-zinc-50/50 text-start text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
+      className="min-h-screen bg-surface-canvas text-start text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
     >
       <div className="mx-auto flex min-h-screen w-full max-w-[100vw] flex-col gap-3 p-3 sm:gap-4 sm:p-4 lg:flex-row lg:p-6">
         <DashboardSidebar
@@ -44,7 +44,7 @@ export default async function GoalsPage() {
           userName={userDisplayName}
         />
 
-        <section className="relative min-h-0 w-full min-w-0 flex-1 rounded-2xl border border-zinc-200/70 bg-white p-4 pb-24 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:rounded-[2rem] sm:p-6 lg:min-h-[calc(100vh-3rem)] lg:p-10">
+        <section className="relative min-h-0 w-full min-w-0 flex-1 rounded-2xl border border-zinc-200/80 bg-surface-elevated p-4 pb-24 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:rounded-[2rem] sm:p-6 lg:min-h-[calc(100vh-3rem)] lg:p-10">
           {goalsResult.error ? (
             <p className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
               {goalsResult.error}

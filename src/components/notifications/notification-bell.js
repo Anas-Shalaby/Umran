@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -130,9 +125,7 @@ export function NotificationBell() {
   }
 
   function handleNotificationClick(notification) {
-    if (!notification.read_at) {
-      markRead(notification.id);
-    }
+    markRead(notification.id);
 
     setOpen(false);
 
@@ -153,7 +146,7 @@ export function NotificationBell() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 ? (
-          <span className="absolute -top-1 -start-1 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-emerald-500 px-1 text-[10px] font-black text-white">
+          <span className="absolute -top-1 -start-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-black text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : null}
@@ -221,19 +214,13 @@ export function NotificationBell() {
                               onClick={() =>
                                 handleNotificationClick(notification)
                               }
-                              className={`w-full px-4 py-3 text-start transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
-                                notification.read_at
-                                  ? "opacity-70"
-                                  : "bg-emerald-50/40 dark:bg-emerald-500/5"
-                              }`}
+                              className="w-full bg-emerald-50/40 px-4 py-3 text-start transition hover:bg-zinc-50 dark:bg-emerald-500/5 dark:hover:bg-zinc-800/60"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">
                                   {notification.title}
                                 </p>
-                                {!notification.read_at ? (
-                                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                                ) : null}
+                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
                               </div>
                               <p className="mt-1 text-[11px] font-medium leading-5 text-zinc-600 dark:text-zinc-400">
                                 {notification.body}

@@ -70,7 +70,7 @@ export function NotificationsProvider({ children }) {
         }
 
         setFetchError("");
-        setNotifications(result.notifications);
+        setNotifications(unreadNotifications);
         setUnreadCount(unreadNotifications.length);
         setHasLoaded(true);
       } finally {
@@ -115,11 +115,7 @@ export function NotificationsProvider({ children }) {
       await markNotificationRead(notificationId);
 
       setNotifications((current) =>
-        current.map((item) =>
-          item.id === notificationId
-            ? { ...item, read_at: item.read_at || new Date().toISOString() }
-            : item,
-        ),
+        current.filter((item) => item.id !== notificationId),
       );
       setUnreadCount((current) => Math.max(0, current - 1));
       knownUnreadIdsRef.current?.delete(notificationId);
@@ -131,12 +127,7 @@ export function NotificationsProvider({ children }) {
       const result = await markAllNotificationsRead();
       if (result?.error) return;
 
-      setNotifications((current) =>
-        current.map((item) => ({
-          ...item,
-          read_at: item.read_at || new Date().toISOString(),
-        })),
-      );
+      setNotifications([]);
       setUnreadCount(0);
       knownUnreadIdsRef.current = new Set();
     });

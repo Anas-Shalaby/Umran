@@ -10,6 +10,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        surface: {
+          base: "var(--surface-base)",
+          canvas: "var(--surface-canvas)",
+          elevated: "var(--surface-elevated)",
+          muted: "var(--surface-muted)",
+        },
         space: {
           950: "#020617",
           900: "#07111f",

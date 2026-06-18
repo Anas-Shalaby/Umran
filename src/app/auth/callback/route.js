@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { maybeSendWelcomeEmailForUser } from "@/lib/email/maybe-send-welcome-email";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request) {
@@ -27,6 +28,8 @@ export async function GET(request) {
   if (!user) {
     return NextResponse.redirect(`${origin}/login`);
   }
+
+  await maybeSendWelcomeEmailForUser(user);
 
   const { data: profile } = await supabase
     .from("profiles")

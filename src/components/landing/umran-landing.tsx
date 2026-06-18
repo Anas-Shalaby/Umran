@@ -14,12 +14,12 @@ import {
   Layers3,
   ListChecks,
   MoonStar,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { getUser } from "@/app/(auth)/actions";
 import { PwaInstallButton } from "@/components/pwa-install-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import Image from "next/image";
 
 const rotatingWords = ["المسلوب", "المشتت", "الضائع"];
 
@@ -219,8 +219,8 @@ function LandingNav() {
           href="/"
           className="inline-flex items-center gap-2.5 text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-50"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-zinc-950 text-xs font-black text-emerald-400 dark:bg-zinc-900">
-            ع
+          <span className="grid h-8 w-8 place-items-center rounded-xl  text-xs font-black text-emerald-400 dark:bg-zinc-900">
+            <Image src="/icon-192.png" alt="عُمران" width={32} height={32} />
           </span>
           عُمران
         </Link>
@@ -689,8 +689,13 @@ function LandingFooter() {
               href="/"
               className="inline-flex items-center gap-2.5 text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-50"
             >
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-950 text-sm font-black text-emerald-400 dark:bg-zinc-900">
-                ع
+              <span className="grid h-9 w-9 place-items-center rounded-xl  text-sm font-black text-emerald-400 dark:bg-zinc-900">
+                <Image
+                  src="/icon-192.png"
+                  alt="عُمران"
+                  width={32}
+                  height={32}
+                />
               </span>
               عُمران
             </Link>

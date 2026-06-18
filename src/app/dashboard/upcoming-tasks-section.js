@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarClock, Loader2, Pencil, Trash } from "lucide-react";
+import { CalendarClock, ChevronDown, Loader2, Pencil, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTask } from "./actions";
 import { PRAYER_ANCHOR_LABELS } from "./prayer-time";
@@ -59,8 +59,10 @@ export function UpcomingTasksSection({
   onTasksChange,
   onEditTask,
   onFixedHabitsChange,
+  defaultCollapsed = true,
 }) {
   const [pendingTaskId, setPendingTaskId] = useState("");
+  const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
   const [isPending, startTransition] = useTransition();
 
   const groupedTasks = useMemo(() => groupTasksByDate(tasks), [tasks]);
@@ -99,19 +101,30 @@ export function UpcomingTasksSection({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl border border-zinc-200/80 bg-white/80 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-5"
+      className="rounded-2xl border border-zinc-200/80 bg-white/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
     >
-      <div className="mb-4 flex items-center gap-2">
-        <CalendarClock className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
+      <button
+        type="button"
+        onClick={() => setIsExpanded((current) => !current)}
+        className="flex w-full items-center gap-2 px-4 py-3 text-start sm:px-5"
+        aria-expanded={isExpanded}
+      >
+        <CalendarClock className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500" />
         <h2 className="text-sm font-black text-zinc-900 dark:text-zinc-100">
           مهام قادمة
         </h2>
         <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
           {tasks.length}
         </span>
-      </div>
+        <ChevronDown
+          className={`ms-auto h-4 w-4 shrink-0 text-zinc-400 transition ${
+            isExpanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
-      <div className="space-y-4">
+      {isExpanded ? (
+      <div className="space-y-4 border-t border-zinc-100 px-4 pb-4 pt-3 dark:border-zinc-800 sm:px-5 sm:pb-5">
         <AnimatePresence initial={false}>
           {groupedTasks.map((group) => (
             <motion.div
@@ -182,6 +195,7 @@ export function UpcomingTasksSection({
           ))}
         </AnimatePresence>
       </div>
+      ) : null}
     </motion.section>
   );
 }

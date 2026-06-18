@@ -80,7 +80,9 @@ export async function getUnreadNotificationCount() {
     return { error: authError, count: 0 };
   }
 
-  const { data, error } = await supabase.rpc("get_my_unread_notification_count");
+  const { data, error } = await supabase.rpc(
+    "get_my_unread_notification_count",
+  );
 
   if (error) {
     console.error("getUnreadNotificationCount:", error.message);

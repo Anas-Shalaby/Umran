@@ -11,10 +11,18 @@
 
 :root {
   color-scheme: light;
+  --surface-base: #f3f3f4;
+  --surface-canvas: #e9e9ec;
+  --surface-elevated: #fafafa;
+  --surface-muted: #efeff1;
 }
 
 .dark {
   color-scheme: dark;
+  --surface-base: #09090b;
+  --surface-canvas: #09090b;
+  --surface-elevated: #18181b;
+  --surface-muted: #27272a;
 }
 
 * {
@@ -23,6 +31,7 @@
 
 html {
   scroll-behavior: smooth;
+  font-size: 17px;
 }
 
 ::selection {
