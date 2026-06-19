@@ -130,7 +130,7 @@ export function UpcomingTasksSection({
       <button
         type="button"
         onClick={() => setIsExpanded((current) => !current)}
-        className="flex w-full items-center gap-2 px-4 py-3 text-start sm:px-5"
+        className="flex min-h-[44px] w-full touch-manipulation items-center gap-2 px-4 py-3 text-start sm:px-5"
         aria-expanded={isExpanded}
       >
         <CalendarClock className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500" />
@@ -201,7 +201,7 @@ export function UpcomingTasksSection({
                         type="button"
                         onClick={() => onEditTask?.(task)}
                         disabled={isPending && pendingTaskId === task.id}
-                        className="grid h-7 w-7 place-items-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                        className="grid h-9 w-9 touch-manipulation place-items-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                         aria-label={`تعديل ${task.task_name}`}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -210,7 +210,7 @@ export function UpcomingTasksSection({
                         type="button"
                         onClick={() => requestDelete(task)}
                         disabled={isPending && pendingTaskId === task.id}
-                        className="grid h-7 w-7 place-items-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                        className="grid h-9 w-9 touch-manipulation place-items-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/50 dark:hover:text-red-400"
                         aria-label={`حذف ${task.task_name}`}
                       >
                         {isPending && pendingTaskId === task.id ? (

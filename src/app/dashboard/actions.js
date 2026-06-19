@@ -12,8 +12,7 @@ import {
   shouldOccurOnDate,
   validateRecurrenceInput,
 } from "@/lib/tasks/recurrence";
-
-const PRAYER_ANCHORS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+import { sortTodayTasks, PRAYER_ANCHORS } from "@/lib/tasks/sort-today-tasks";
 
 const TASK_FIELDS =
   "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, scheduled_time, created_at, source_camp_task_id, recurrence_rule_id, recurrence_rule:task_recurrence_rules(recurrence_type, recurrence_weekdays), goals:goals(title)";
@@ -54,21 +53,6 @@ function isFixedHabitTask(task, fixedHabits) {
   );
 }
 
-function sortTasksBySchedule(tasks) {
-  return [...tasks].sort((a, b) => {
-    const aTime = a.scheduled_time || "";
-    const bTime = b.scheduled_time || "";
-
-    if (aTime && bTime && aTime !== bTime) {
-      return aTime.localeCompare(bTime);
-    }
-
-    if (aTime && !bTime) return -1;
-    if (!aTime && bTime) return 1;
-
-    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-  });
-}
 
 async function fetchUserFixedHabits(supabase, userId) {
   const { data } = await supabase
@@ -173,21 +157,7 @@ async function syncFixedHabitsToToday(
   );
 }
 
-function sortSyncedTodayTasks(tasks) {
-  const grouped = new Map();
-
-  for (const task of tasks) {
-    const anchor = task.prayer_anchor || "dhuhr";
-    if (!grouped.has(anchor)) {
-      grouped.set(anchor, []);
-    }
-    grouped.get(anchor).push(task);
-  }
-
-  return PRAYER_ANCHORS.flatMap((anchor) =>
-    sortTasksBySchedule(grouped.get(anchor) || []),
-  );
-}
+const sortSyncedTodayTasks = sortTodayTasks;
 
 function countCustomTasksForDate(tasks, fixedHabits, dateStr) {
   return (tasks || []).filter(

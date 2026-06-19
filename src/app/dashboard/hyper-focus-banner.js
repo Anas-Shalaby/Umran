@@ -7,6 +7,7 @@ import { Loader2, Play, Sparkles, Square } from "lucide-react";
 import { completeFocusTask } from "./actions";
 import { getCurrentPrayerAnchor, PRAYER_ANCHOR_LABELS } from "./prayer-time";
 import { isFixedHabitTask } from "./fixed-habits-settings";
+import { buildTodayTimeline } from "@/lib/tasks/sort-today-tasks";
 
 function formatElapsedTime(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -42,19 +43,28 @@ export function HyperFocusBanner({
 
   const currentAnchor = useMemo(() => getCurrentPrayerAnchor(), []);
 
-  const anchorTasks = useMemo(() => {
-    return tasks.filter((task) => task.prayer_anchor === currentAnchor);
-  }, [tasks, currentAnchor]);
+  const todayTimeline = useMemo(
+    () => buildTodayTimeline(tasks, currentAnchor),
+    [tasks, currentAnchor],
+  );
 
   const liveTask = useMemo(() => {
-    return anchorTasks.find((task) => !task.is_completed) || null;
-  }, [anchorTasks]);
+    for (const block of todayTimeline) {
+      const pendingTask = block.tasks.find(({ step }) => step !== null);
+      if (pendingTask) {
+        return pendingTask.task;
+      }
+    }
+    return null;
+  }, [todayTimeline]);
+
+  const liveTaskAnchor = liveTask?.prayer_anchor || currentAnchor;
 
   const focusState = useMemo(() => {
-    if (!anchorTasks.length) return "empty";
+    if (!tasks.length) return "empty";
     if (!liveTask) return "success";
     return "focus";
-  }, [anchorTasks.length, liveTask]);
+  }, [tasks.length, liveTask]);
 
   const isFixed = liveTask ? isFixedHabitTask(liveTask, fixedHabits) : false;
 
@@ -204,7 +214,7 @@ export function HyperFocusBanner({
                     {isFocusActive ? "وضع الاستغراق" : "ثغرك الحالي"}
                   </span>
                   <span className="text-[10px] font-bold text-zinc-400">
-                    {PRAYER_ANCHOR_LABELS[currentAnchor]}
+                    {PRAYER_ANCHOR_LABELS[liveTaskAnchor]}
                   </span>
                 </div>
 
@@ -254,7 +264,7 @@ export function HyperFocusBanner({
                       type="button"
                       onClick={handleStartFocus}
                       disabled={isSaving || showCelebration}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-60 sm:h-9 sm:w-auto sm:text-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                      className="inline-flex h-11 min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-60 sm:h-9 sm:w-auto sm:text-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                     >
                       <Play className="h-3.5 w-3.5 fill-current" />
                       بدء الاستغراق
@@ -265,7 +275,7 @@ export function HyperFocusBanner({
                         type="button"
                         onClick={handleEndFocus}
                         disabled={isSaving}
-                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-bold text-white transition hover:bg-red-500 disabled:opacity-60 sm:h-9 sm:w-auto sm:text-sm"
+                        className="inline-flex h-11 min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-bold text-white transition hover:bg-red-500 disabled:opacity-60 sm:h-9 sm:w-auto sm:text-sm"
                       >
                         {isSaving ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -278,7 +288,7 @@ export function HyperFocusBanner({
                         type="button"
                         onClick={handleCancelSession}
                         disabled={isSaving}
-                        className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 sm:h-9 sm:w-auto dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        className="h-11 min-h-[44px] w-full touch-manipulation rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 sm:h-9 sm:w-auto dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                       >
                         إلغاء
                       </button>
@@ -296,7 +306,7 @@ export function HyperFocusBanner({
               </span>
               <div className="min-w-0">
                 <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                  وضع الراحة · {PRAYER_ANCHOR_LABELS[currentAnchor]}
+                  وضع الراحة · {PRAYER_ANCHOR_LABELS[liveTaskAnchor]}
                 </p>
                 <p className="mt-1 text-xs font-semibold leading-6 text-emerald-900 sm:text-sm sm:leading-7 dark:text-emerald-100">
                   الحمد لله، تم سد ثغور هذا الوقت. خذ قسطاً من الراحة واستعد
@@ -313,7 +323,7 @@ export function HyperFocusBanner({
               </span>
               <div className="min-w-0">
                 <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
-                  ثغرك الحالي · {PRAYER_ANCHOR_LABELS[currentAnchor]}
+                  ثغرك الحالي · {PRAYER_ANCHOR_LABELS[liveTaskAnchor]}
                 </p>
                 <p className="mt-1 text-xs font-medium leading-6 text-zinc-600 sm:text-sm sm:leading-7 dark:text-zinc-300">
                   هذا الوقت خالٍ من المهام. ارتح أو أضف ثغراً من زر الإضافة.
@@ -330,7 +340,7 @@ export function HyperFocusBanner({
     const overlay = (
       <motion.div
         layout
-        className="fixed inset-0 z-[100] flex items-end justify-center bg-zinc-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-zinc-950/50 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center sm:p-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

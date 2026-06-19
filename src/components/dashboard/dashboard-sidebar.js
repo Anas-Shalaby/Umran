@@ -92,7 +92,7 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
 
   return (
     <>
-      <div className="sticky top-0 z-30 -mx-1 mb-1 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-surface-elevated/95 px-3 py-2.5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/90 lg:hidden">
+      <div className="sticky top-0 z-30 -mx-0.5 mb-1 flex items-center justify-between gap-2 rounded-xl border border-zinc-200/80 bg-surface-elevated/95 px-2.5 py-2 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/90 sm:gap-3 sm:rounded-2xl sm:px-3 sm:py-2.5 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-base font-black text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
             <Image
@@ -118,7 +118,7 @@ export function DashboardSidebar({ activeHref = "/dashboard", userName = "" }) {
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-zinc-200 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="grid h-10 w-10 touch-manipulation place-items-center rounded-xl border border-zinc-200 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
             aria-label="فتح القائمة"
           >
             <Menu className="h-4 w-4" />
