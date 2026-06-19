@@ -6,6 +6,9 @@ import { CalendarClock, ChevronDown, Loader2, Pencil, Trash } from "lucide-react
 import { toast } from "sonner";
 import { deleteTask } from "./actions";
 import { PRAYER_ANCHOR_LABELS } from "./prayer-time";
+import { RecurrenceEditScopeDialog } from "@/components/dashboard/recurrence-edit-scope-dialog";
+import { getRecurrenceLabel, shouldShowTaskInUpcomingSection } from "@/lib/tasks/recurrence";
+import { getLocalTodayDate } from "./prayer-time";
 
 const toastStyle = { fontFamily: "Umran" };
 
@@ -62,18 +65,29 @@ export function UpcomingTasksSection({
   defaultCollapsed = true,
 }) {
   const [pendingTaskId, setPendingTaskId] = useState("");
+  const [deleteScopeTask, setDeleteScopeTask] = useState(null);
   const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
   const [isPending, startTransition] = useTransition();
 
-  const groupedTasks = useMemo(() => groupTasksByDate(tasks), [tasks]);
+  const visibleTasks = useMemo(() => {
+    const today = getLocalTodayDate();
+    return tasks.filter((task) =>
+      shouldShowTaskInUpcomingSection(task, today),
+    );
+  }, [tasks]);
 
-  function handleDelete(task) {
+  const groupedTasks = useMemo(
+    () => groupTasksByDate(visibleTasks),
+    [visibleTasks],
+  );
+
+  function handleDelete(task, deleteScope = "instance") {
     const previous = tasks;
     onTasksChange?.(tasks.filter((item) => item.id !== task.id));
     setPendingTaskId(task.id);
 
     startTransition(async () => {
-      const result = await deleteTask(task.id);
+      const result = await deleteTask(task.id, deleteScope);
 
       if (result?.error) {
         toast.error(result.error, { position: "top-right", style: toastStyle });
@@ -92,11 +106,21 @@ export function UpcomingTasksSection({
     });
   }
 
-  if (!tasks.length) {
+  function requestDelete(task) {
+    if (task.recurrence_rule_id) {
+      setDeleteScopeTask(task);
+      return;
+    }
+
+    handleDelete(task);
+  }
+
+  if (!visibleTasks.length) {
     return null;
   }
 
   return (
+    <>
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -114,7 +138,7 @@ export function UpcomingTasksSection({
           مهام قادمة
         </h2>
         <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-          {tasks.length}
+          {visibleTasks.length}
         </span>
         <ChevronDown
           className={`ms-auto h-4 w-4 shrink-0 text-zinc-400 transition ${
@@ -139,7 +163,10 @@ export function UpcomingTasksSection({
                 {group.label}
               </p>
               <ul className="space-y-2">
-                {group.tasks.map((task) => (
+                {group.tasks.map((task) => {
+                  const recurrenceLabel = getRecurrenceLabel(task);
+
+                  return (
                   <motion.li
                     key={task.id}
                     layout
@@ -162,6 +189,11 @@ export function UpcomingTasksSection({
                             {formatScheduledTime(task.scheduled_time)}
                           </span>
                         ) : null}
+                        {recurrenceLabel ? (
+                          <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300">
+                            {recurrenceLabel}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
@@ -176,7 +208,7 @@ export function UpcomingTasksSection({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(task)}
+                        onClick={() => requestDelete(task)}
                         disabled={isPending && pendingTaskId === task.id}
                         className="grid h-7 w-7 place-items-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/50 dark:hover:text-red-400"
                         aria-label={`حذف ${task.task_name}`}
@@ -189,7 +221,8 @@ export function UpcomingTasksSection({
                       </button>
                     </div>
                   </motion.li>
-                ))}
+                  );
+                })}
               </ul>
             </motion.div>
           ))}
@@ -197,6 +230,20 @@ export function UpcomingTasksSection({
       </div>
       ) : null}
     </motion.section>
+
+    <RecurrenceEditScopeDialog
+      open={Boolean(deleteScopeTask)}
+      mode="delete"
+      onClose={() => setDeleteScopeTask(null)}
+      onConfirm={(scope) => {
+        const task = deleteScopeTask;
+        setDeleteScopeTask(null);
+        if (task) {
+          handleDelete(task, scope);
+        }
+      }}
+    />
+    </>
   );
 }
 

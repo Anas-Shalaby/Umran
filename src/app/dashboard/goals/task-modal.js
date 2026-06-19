@@ -9,6 +9,9 @@ import {
   taskModalInputClassName,
 } from "@/components/dashboard/task-modal-shell";
 import { saveGoalTask } from "./actions";
+import { TaskRecurrencePicker } from "@/components/dashboard/task-recurrence-picker";
+import { RecurrenceEditScopeDialog } from "@/components/dashboard/recurrence-edit-scope-dialog";
+import { RECURRENCE_TYPES } from "@/lib/tasks/recurrence";
 
 const PRAYER_OPTIONS = [
   { value: "fajr", label: "الفجر" },
@@ -51,6 +54,8 @@ const EMPTY_FORM = {
   prayer_anchor: "fajr",
   priority_level: "normal",
   expected_minutes: "",
+  recurrence_type: RECURRENCE_TYPES.NONE,
+  recurrence_weekdays: [],
 };
 
 const labelClassName = "text-xs font-bold text-zinc-800 sm:text-sm dark:text-zinc-200";
@@ -70,19 +75,25 @@ function buildFormFromTask(task) {
       task.expected_minutes != null && task.expected_minutes !== ""
         ? String(task.expected_minutes)
         : "",
+    recurrence_type:
+      task.recurrence_rule?.recurrence_type || RECURRENCE_TYPES.NONE,
+    recurrence_weekdays: task.recurrence_rule?.recurrence_weekdays || [],
   };
 }
 
 export function TaskModal({ open, goalId, task, onClose, onSaved }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const [scopeDialogOpen, setScopeDialogOpen] = useState(false);
   const [isSaving, startSave] = useTransition();
   const isEditing = Boolean(task?.id);
+  const isRecurringInstance = Boolean(task?.recurrence_rule_id);
 
   useEffect(() => {
     if (open) {
       setForm(buildFormFromTask(task));
       setError("");
+      setScopeDialogOpen(false);
     }
   }, [open, task]);
 
@@ -90,17 +101,16 @@ export function TaskModal({ open, goalId, task, onClose, onSaved }) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-
-    if (!form.task_name.trim()) {
-      setError("اسم الثغرة مطلوب.");
-      return;
-    }
-
+  function saveTask(editScope = "instance") {
     startSave(async () => {
-      const result = await saveGoalTask(goalId, form, task?.id || null);
+      const result = await saveGoalTask(
+        goalId,
+        {
+          ...form,
+          edit_scope: isRecurringInstance ? editScope : "rule",
+        },
+        task?.id || null,
+      );
 
       if (result?.error) {
         setError(result.error);
@@ -114,7 +124,25 @@ export function TaskModal({ open, goalId, task, onClose, onSaved }) {
     });
   }
 
+  function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+
+    if (!form.task_name.trim()) {
+      setError("اسم الثغرة مطلوب.");
+      return;
+    }
+
+    if (isRecurringInstance) {
+      setScopeDialogOpen(true);
+      return;
+    }
+
+    saveTask("rule");
+  }
+
   return (
+    <>
     <TaskModalShell
       open={open}
       onClose={onClose}
@@ -239,6 +267,14 @@ export function TaskModal({ open, goalId, task, onClose, onSaved }) {
           />
         </div>
 
+        <TaskRecurrencePicker
+          recurrenceType={form.recurrence_type}
+          recurrenceWeekdays={form.recurrence_weekdays}
+          onTypeChange={(value) => updateField("recurrence_type", value)}
+          onWeekdaysChange={(value) => updateField("recurrence_weekdays", value)}
+          disabled={isSaving}
+        />
+
         {error ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
@@ -246,6 +282,16 @@ export function TaskModal({ open, goalId, task, onClose, onSaved }) {
         ) : null}
       </form>
     </TaskModalShell>
+
+      <RecurrenceEditScopeDialog
+        open={scopeDialogOpen}
+        onClose={() => setScopeDialogOpen(false)}
+        onConfirm={(scope) => {
+          setScopeDialogOpen(false);
+          saveTask(scope);
+        }}
+      />
+    </>
   );
 }
 

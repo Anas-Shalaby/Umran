@@ -15,6 +15,9 @@ import { FixedHabitToggle } from "./fixed-habit-toggle";
 import { isFixedHabitTask } from "./fixed-habits-settings";
 import { getLocalTodayDate } from "./prayer-time";
 import { formatTaskScheduledTime } from "./upcoming-tasks-section";
+import { TaskRecurrencePicker } from "@/components/dashboard/task-recurrence-picker";
+import { RecurrenceEditScopeDialog } from "@/components/dashboard/recurrence-edit-scope-dialog";
+import { RECURRENCE_TYPES } from "@/lib/tasks/recurrence";
 
 const PRAYER_OPTIONS = [
   { value: "fajr", label: "بعد الفجر" },
@@ -36,6 +39,8 @@ function buildFormFromTask(task, fixedHabits = []) {
       task_date: getLocalTodayDate(),
       scheduled_time: "",
       is_fixed_habit: false,
+      recurrence_type: RECURRENCE_TYPES.NONE,
+      recurrence_weekdays: [],
     };
   }
 
@@ -45,6 +50,9 @@ function buildFormFromTask(task, fixedHabits = []) {
     task_date: task.task_date || getLocalTodayDate(),
     scheduled_time: formatTimeForInput(task.scheduled_time),
     is_fixed_habit: isFixedHabitTask(task, fixedHabits),
+    recurrence_type:
+      task.recurrence_rule?.recurrence_type || RECURRENCE_TYPES.NONE,
+    recurrence_weekdays: task.recurrence_rule?.recurrence_weekdays || [],
   };
 }
 
@@ -57,13 +65,16 @@ export function EditTaskModal({
 }) {
   const [form, setForm] = useState(() => buildFormFromTask(task, fixedHabits));
   const [error, setError] = useState("");
+  const [scopeDialogOpen, setScopeDialogOpen] = useState(false);
   const [isSaving, startSave] = useTransition();
   const todayDate = getLocalTodayDate();
+  const isRecurringInstance = Boolean(task?.recurrence_rule_id);
 
   useEffect(() => {
     if (open) {
       setForm(buildFormFromTask(task, fixedHabits));
       setError("");
+      setScopeDialogOpen(false);
     }
   }, [open, task, fixedHabits]);
 
@@ -71,17 +82,7 @@ export function EditTaskModal({
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-
-    if (!task?.id) return;
-
-    if (!form.task_name.trim()) {
-      setError("اكتب اسم المهمة أولاً.");
-      return;
-    }
-
+  function saveTask(editScope = "instance") {
     startSave(async () => {
       const result = await updateTask(
         task.id,
@@ -90,6 +91,9 @@ export function EditTaskModal({
         form.task_date,
         form.scheduled_time || null,
         form.is_fixed_habit,
+        form.recurrence_type,
+        form.recurrence_weekdays,
+        isRecurringInstance ? editScope : "rule",
       );
 
       if (result?.error) {
@@ -104,8 +108,28 @@ export function EditTaskModal({
     });
   }
 
+  function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+
+    if (!task?.id) return;
+
+    if (!form.task_name.trim()) {
+      setError("اكتب اسم المهمة أولاً.");
+      return;
+    }
+
+    if (isRecurringInstance) {
+      setScopeDialogOpen(true);
+      return;
+    }
+
+    saveTask("rule");
+  }
+
   return (
-    <TaskModalShell
+    <>
+      <TaskModalShell
       open={open && Boolean(task)}
       onClose={onClose}
       ariaLabel="تعديل المهمة"
@@ -204,6 +228,14 @@ export function EditTaskModal({
           disabled={isSaving}
         />
 
+        <TaskRecurrencePicker
+          recurrenceType={form.recurrence_type}
+          recurrenceWeekdays={form.recurrence_weekdays}
+          onTypeChange={(value) => updateField("recurrence_type", value)}
+          onWeekdaysChange={(value) => updateField("recurrence_weekdays", value)}
+          disabled={isSaving}
+        />
+
         {error ? (
           <p className="text-xs font-semibold text-red-600 dark:text-red-400">
             {error}
@@ -211,5 +243,15 @@ export function EditTaskModal({
         ) : null}
       </form>
     </TaskModalShell>
+
+      <RecurrenceEditScopeDialog
+        open={scopeDialogOpen}
+        onClose={() => setScopeDialogOpen(false)}
+        onConfirm={(scope) => {
+          setScopeDialogOpen(false);
+          saveTask(scope);
+        }}
+      />
+    </>
   );
 }

@@ -7,7 +7,6 @@ import {
   Loader2,
   Moon,
   Pencil,
-  Plus,
   Sparkles,
   Star,
   Sunrise,
@@ -17,10 +16,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { addTask, toggleTask, deleteTask } from "./actions";
+import { toggleTask, deleteTask } from "./actions";
 import { EditTaskModal } from "./edit-task-modal";
 import { TASK_ADDED_EVENT } from "@/components/dashboard/dashboard-add-task-fab";
-import { FixedHabitToggle } from "./fixed-habit-toggle";
+import { RecurrenceEditScopeDialog } from "@/components/dashboard/recurrence-edit-scope-dialog";
 import { FixedHabitsSettings, isFixedHabitTask } from "./fixed-habits-settings";
 import { HyperFocusBanner } from "./hyper-focus-banner";
 import { getCurrentPrayerAnchor, getLocalTodayDate } from "./prayer-time";
@@ -28,6 +27,10 @@ import {
   UpcomingTasksSection,
   formatTaskScheduledTime,
 } from "./upcoming-tasks-section";
+import {
+  getRecurrenceLabel,
+  shouldShowTaskInUpcomingSection,
+} from "@/lib/tasks/recurrence";
 
 const prayerBlocks = [
   {
@@ -98,11 +101,10 @@ export function TodayTasksBoard({
   const [tasks, setTasks] = useState(initialTasks);
   const [fixedHabits, setFixedHabits] = useState(initialFixedHabits);
   const [upcomingTasks, setUpcomingTasks] = useState(initialUpcomingTasks);
-  const [scheduleDate, setScheduleDate] = useState(() => getLocalTodayDate());
-  const [isFixedHabit, setIsFixedHabit] = useState(false);
   const [selectedPrayer, setSelectedPrayer] = useState("all");
   const [pendingTaskId, setPendingTaskId] = useState("");
   const [editingTask, setEditingTask] = useState(null);
+  const [deleteScopeTask, setDeleteScopeTask] = useState(null);
   const [showSpiritualBanner, setShowSpiritualBanner] = useState(false);
   const [isPending, startTransition] = useTransition();
   const sectionRefs = useRef({});
@@ -128,15 +130,6 @@ export function TodayTasksBoard({
       percent: total ? Math.round((completed / total) * 100) : 0,
     };
   }, [tasks]);
-
-  const customTasksCount = useMemo(() => {
-    return tasks.filter((task) => !isFixedHabitTask(task, fixedHabits)).length;
-  }, [tasks, fixedHabits]);
-
-  const todayDate = getLocalTodayDate();
-  const isSchedulingToday = scheduleDate === todayDate;
-  const isAtTodayLimit =
-    isSchedulingToday && customTasksCount >= 3 && !isFixedHabit;
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -177,7 +170,9 @@ export function TodayTasksBoard({
     }
 
     if (result.isScheduled) {
-      setUpcomingTasks((current) => insertUpcomingTask(current, result.task));
+      if (shouldShowTaskInUpcomingSection(result.task, getLocalTodayDate())) {
+        setUpcomingTasks((current) => insertUpcomingTask(current, result.task));
+      }
       if (!silent) {
         toast.success("تمت جدولة المهمة.", {
           position: "top-right",
@@ -195,61 +190,6 @@ export function TodayTasksBoard({
         style: { fontFamily: "Umran" },
       });
     }
-  }
-
-  function handleAddTask(event) {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-    const taskName = String(formData.get("task_name") || "").trim();
-    const taskDate = String(formData.get("task_date") || scheduleDate).trim();
-    const scheduledTime = String(formData.get("scheduled_time") || "").trim();
-    const makeFixedHabit =
-      formData.get("is_fixed_habit") === "on" || isFixedHabit;
-
-    if (!taskName) {
-      toast.error("اكتب اسم المهمة أولاً.", {
-        style: {
-          fontFamily: "Umran",
-        },
-        position: "top-right",
-      });
-      return;
-    }
-
-    if (taskDate === todayDate && customTasksCount >= 3 && !makeFixedHabit) {
-      toast.warning("اكتفي بثلاث مهام دنيوية اليوم", {
-        style: {
-          fontFamily: "Umran",
-        },
-        position: "top-right",
-        id: "rule-of-three-limit",
-        description:
-          "ركز على ثغورك الثلاثة الأساسية لليوم لضمان أعلى مستويات التركيز. حقيقة علمية: حصر يومك في ٣ مهام كبرى يقضي على الشلل الهروبي لعقلك المشتت ويرفع جودة التنفيذ بنسبة ٨٥٪.",
-      });
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await addTask(
-        taskName,
-        selectedPrayer,
-        taskDate,
-        scheduledTime || null,
-        makeFixedHabit,
-      );
-
-      if (result?.error) {
-        toast.error(result.error);
-      }
-
-      if (result?.task) {
-        applyNewTaskResult(result);
-        event.target.reset();
-        setScheduleDate(todayDate);
-        setIsFixedHabit(false);
-      }
-    });
   }
 
   function handleToggleTask(task) {
@@ -297,12 +237,13 @@ export function TodayTasksBoard({
 
     if (wasToday && isScheduled) {
       setTasks((current) => current.filter((item) => item.id !== task.id));
-      setUpcomingTasks((current) =>
-        insertUpcomingTask(
-          current.filter((item) => item.id !== task.id),
-          task,
-        ),
-      );
+      setUpcomingTasks((current) => {
+        const next = current.filter((item) => item.id !== task.id);
+        if (shouldShowTaskInUpcomingSection(task, getLocalTodayDate())) {
+          return insertUpcomingTask(next, task);
+        }
+        return next;
+      });
     } else if (wasScheduled && isToday) {
       setUpcomingTasks((current) =>
         current.filter((item) => item.id !== task.id),
@@ -316,12 +257,13 @@ export function TodayTasksBoard({
         current.map((item) => (item.id === task.id ? task : item)),
       );
     } else if (isScheduled) {
-      setUpcomingTasks((current) =>
-        insertUpcomingTask(
-          current.filter((item) => item.id !== task.id),
-          task,
-        ),
-      );
+      setUpcomingTasks((current) => {
+        const next = current.filter((item) => item.id !== task.id);
+        if (shouldShowTaskInUpcomingSection(task, getLocalTodayDate())) {
+          return insertUpcomingTask(next, task);
+        }
+        return next;
+      });
     }
 
     toast.success("تم تحديث المهمة.", {
@@ -332,14 +274,14 @@ export function TodayTasksBoard({
     });
   }
 
-  function handleDeleteTask(task) {
+  function handleDeleteTask(task, deleteScope = "instance") {
     const previousTasks = tasks;
     setTasks((currentTasks) =>
       currentTasks.filter((currentTask) => currentTask.id !== task.id),
     );
 
     startTransition(async () => {
-      const result = await deleteTask(task.id);
+      const result = await deleteTask(task.id, deleteScope);
 
       if (result?.error) {
         toast.error(result.error);
@@ -358,6 +300,15 @@ export function TodayTasksBoard({
         },
       });
     });
+  }
+
+  function requestDeleteTask(task) {
+    if (task.recurrence_rule_id) {
+      setDeleteScopeTask(task);
+      return;
+    }
+
+    handleDeleteTask(task);
   }
 
   function handleDismissSpiritualBanner() {
@@ -551,7 +502,7 @@ export function TodayTasksBoard({
                               pending={pendingTaskId === task.id}
                               onToggleTask={handleToggleTask}
                               onEditTask={setEditingTask}
-                              onDeleteTask={handleDeleteTask}
+                              onDeleteTask={requestDeleteTask}
                               compact
                               dense
                             />
@@ -637,6 +588,19 @@ export function TodayTasksBoard({
         onClose={() => setEditingTask(null)}
         onSaved={handleEditSaved}
       />
+
+      <RecurrenceEditScopeDialog
+        open={Boolean(deleteScopeTask)}
+        mode="delete"
+        onClose={() => setDeleteScopeTask(null)}
+        onConfirm={(scope) => {
+          const task = deleteScopeTask;
+          setDeleteScopeTask(null);
+          if (task) {
+            handleDeleteTask(task, scope);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -654,6 +618,9 @@ function TaskItem({
   const goalTitle = task?.goals?.title || "";
   const campTitle = task?.camp_source?.camps?.title || "";
   const scheduledTimeLabel = formatTaskScheduledTime(task.scheduled_time);
+  const recurrenceLabel = getRecurrenceLabel(task);
+  const hasMetaBadges =
+    scheduledTimeLabel || goalTitle || campTitle || recurrenceLabel;
 
   return (
     <motion.div
@@ -734,11 +701,16 @@ function TaskItem({
             >
               {task.task_name}
             </span>
-            {!compact && (scheduledTimeLabel || goalTitle || campTitle) ? (
+            {!compact && hasMetaBadges ? (
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {scheduledTimeLabel ? (
                   <span className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-bold text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                     {scheduledTimeLabel}
+                  </span>
+                ) : null}
+                {recurrenceLabel ? (
+                  <span className="inline-flex max-w-full items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300">
+                    {recurrenceLabel}
                   </span>
                 ) : null}
                 {goalTitle ? (
@@ -754,13 +726,30 @@ function TaskItem({
               </div>
             ) : null}
           </span>
-          {compact && scheduledTimeLabel ? (
-            <span
-              className={`shrink-0 rounded-full border border-zinc-200 bg-white font-bold text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 ${
-                dense ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]"
-              }`}
-            >
-              {scheduledTimeLabel}
+          {compact && (scheduledTimeLabel || recurrenceLabel) ? (
+            <span className="flex shrink-0 items-center gap-1">
+              {recurrenceLabel ? (
+                <span
+                  className={`rounded-full border border-violet-200 bg-violet-50 font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300 ${
+                    dense
+                      ? "px-1.5 py-0 text-[10px]"
+                      : "px-2 py-0.5 text-[11px]"
+                  }`}
+                >
+                  {recurrenceLabel}
+                </span>
+              ) : null}
+              {scheduledTimeLabel ? (
+                <span
+                  className={`rounded-full border border-zinc-200 bg-white font-bold text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 ${
+                    dense
+                      ? "px-1.5 py-0 text-[10px]"
+                      : "px-2 py-0.5 text-[11px]"
+                  }`}
+                >
+                  {scheduledTimeLabel}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </span>

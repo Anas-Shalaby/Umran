@@ -83,9 +83,10 @@ alter table public.profiles
 011_task_reminder_rpc.sql
 012_notifications_grants.sql
 013_notifications_read_rpc.sql
+014_task_recurrence.sql
 ```
 
-شغّل كل migrations بالترتيب — **`013_notifications_read_rpc.sql` ضروري** لقراءة الإشعارات في الجرس.
+شغّل كل migrations بالترتيب — **`013_notifications_read_rpc.sql` ضروري** لقراءة الإشعارات في الجرس، و**`014_task_recurrence.sql`** لتكرار المهام (يومي/أسبوعي).
 
 > تأكد أيضاً من وجود جداول `tasks` و`goals` و`goal_tasks` في مشروعك إن لم تكن ضمن migrations — راجع schema مشروعك في Supabase.
 

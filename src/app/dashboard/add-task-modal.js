@@ -14,6 +14,8 @@ import {
 import { addTask } from "./actions";
 import { FixedHabitToggle } from "./fixed-habit-toggle";
 import { getLocalTodayDate } from "./prayer-time";
+import { TaskRecurrencePicker } from "@/components/dashboard/task-recurrence-picker";
+import { RECURRENCE_TYPES } from "@/lib/tasks/recurrence";
 
 const PRAYER_OPTIONS = [
   { value: "fajr", label: "بعد الفجر" },
@@ -29,6 +31,8 @@ const emptyForm = (prayerAnchor) => ({
   task_date: getLocalTodayDate(),
   scheduled_time: "",
   is_fixed_habit: false,
+  recurrence_type: RECURRENCE_TYPES.NONE,
+  recurrence_weekdays: [],
 });
 
 export function FloatingAddTaskButton({ onClick, hidden = false }) {
@@ -102,6 +106,8 @@ export function AddTaskModal({
         form.task_date,
         form.scheduled_time || null,
         form.is_fixed_habit,
+        form.recurrence_type,
+        form.recurrence_weekdays,
       );
 
       if (result?.error) {
@@ -215,6 +221,14 @@ export function AddTaskModal({
           id={fixedHabitToggleId}
           checked={form.is_fixed_habit}
           onChange={(value) => updateField("is_fixed_habit", value)}
+          disabled={isSaving}
+        />
+
+        <TaskRecurrencePicker
+          recurrenceType={form.recurrence_type}
+          recurrenceWeekdays={form.recurrence_weekdays}
+          onTypeChange={(value) => updateField("recurrence_type", value)}
+          onWeekdaysChange={(value) => updateField("recurrence_weekdays", value)}
           disabled={isSaving}
         />
 

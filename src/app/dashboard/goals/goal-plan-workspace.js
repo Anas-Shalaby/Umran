@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { PRAYER_ANCHOR_LABELS } from "../prayer-time";
 import { deleteGoalTask, toggleGoalTask } from "./actions";
 import { TASK_PRIORITY_META, TaskModal } from "./task-modal";
+import { getRecurrenceLabel } from "@/lib/tasks/recurrence";
 
 const toastStyle = { fontFamily: "Umran" };
 
@@ -245,6 +246,7 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
                   const prayerLabel = task.prayer_anchor
                     ? PRAYER_ANCHOR_LABELS[task.prayer_anchor]
                     : null;
+                  const recurrenceLabel = getRecurrenceLabel(task);
 
                   return (
                     <motion.div
@@ -302,17 +304,29 @@ export function GoalPlanWorkspace({ goal: initialGoal }) {
                               {prayerLabel}
                             </span>
                           ) : null}
+                          {recurrenceLabel ? (
+                            <span className="inline-flex w-fit shrink-0 rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300">
+                              {recurrenceLabel}
+                            </span>
+                          ) : null}
                         </button>
 
+                        <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
                         {prayerLabel ? (
-                          <span className="hidden shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold text-zinc-600 sm:inline-flex dark:bg-zinc-900 dark:text-zinc-400">
+                          <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
                             {prayerLabel}
                           </span>
                         ) : (
-                          <span className="hidden shrink-0 text-[10px] font-medium text-zinc-400 sm:inline">
+                          <span className="text-[10px] font-medium text-zinc-400">
                             —
                           </span>
                         )}
+                        {recurrenceLabel ? (
+                          <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300">
+                            {recurrenceLabel}
+                          </span>
+                        ) : null}
+                        </div>
 
                         <button
                           type="button"
