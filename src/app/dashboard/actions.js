@@ -16,7 +16,7 @@ import {
 const PRAYER_ANCHORS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 const TASK_FIELDS =
-  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, scheduled_time, created_at, source_camp_task_id, recurrence_rule_id, recurrence_rule:task_recurrence_rules(recurrence_type, recurrence_weekdays), goals:goals(title), camp_source:camp_tasks!source_camp_task_id(title, camps(title))";
+  "id, user_id, goal_id, task_name, prayer_anchor, is_completed, duration_minutes, task_date, scheduled_time, created_at, source_camp_task_id, recurrence_rule_id, recurrence_rule:task_recurrence_rules(recurrence_type, recurrence_weekdays), goals:goals(title)";
 
 const RECURRENCE_RULE_FIELDS =
   "id, user_id, task_name, prayer_anchor, scheduled_time, recurrence_type, recurrence_weekdays, starts_on, recurrence_skipped_dates, is_active, created_at";
@@ -785,7 +785,7 @@ export async function getTasksForToday() {
 
   if (error) {
     return {
-      error: "تعذر تحميل مهام اليوم. حاول تحديث الصفحة.",
+      error: error.message,
       tasks: [],
       fixedHabits: fixedHabits || [],
     };
